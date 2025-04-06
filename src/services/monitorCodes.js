@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { sendReply } = require('./whatsappUtils');  // Asegúrate de tener la función para enviar el mensaje
+const { sendReply } = require('./loadCommonFunctions');  // Asegúrate de tener la función para enviar el mensaje
 
 // Ruta donde los subbots guardan los códigos (actualiza esta ruta más tarde)
 const pendingCodesDir = path.resolve(__dirname, 'subbots', 'pending_codes');
@@ -29,8 +29,10 @@ setInterval(() => {
         if (codeMatch) {
           const code = codeMatch[1];
 
-          // Enviar el código por WhatsApp (supongamos que tienes el número del usuario)
-          const userPhone = '1234567890';  // Cambia esto por el número real del usuario que solicitó
+          // Extraemos el número de teléfono del nombre del archivo
+          const userPhone = file.replace('.txt', ''); // Se espera que el nombre del archivo sea el número de teléfono
+
+          // Enviar el código por WhatsApp
           sendReply(userPhone, `Tu código de emparejamiento es: ${code}`);
 
           // Eliminamos el archivo después de enviarlo
