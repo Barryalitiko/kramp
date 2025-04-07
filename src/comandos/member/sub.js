@@ -26,8 +26,8 @@ module.exports = {
       await sendWaitReact();
       console.log(`Iniciando subbot con número: ${number}`);
 
-      // Ejecuta el subbot en el repositorio separado (asume que está en la misma máquina)
-      const subbotProcess = spawn('node', [path.resolve(__dirname, 'subbot', 'connect.js'), number]);
+      // Ejecuta el subbot en el repositorio separado (ruta ajustada)
+      const subbotProcess = spawn('node', [path.resolve('C:/Users/tioba/subkram/src/connect.js'), number]);
 
       subbotProcess.stdout.on('data', (data) => {
         console.log(`Subbot Output: ${data}`);
