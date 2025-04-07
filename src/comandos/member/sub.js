@@ -1,6 +1,5 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
-const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 
@@ -26,26 +25,41 @@ module.exports = {
       await sendWaitReact();
       console.log(`Recibiendo número para el subbot: ${number}`);
 
-      // Crear la ruta al directorio temp en el subbot
+      // Ruta al subbot
       const subbotTempDirPath = path.resolve('C:/Users/tioba/subkram/src/comandos/temp');
-      
-      // Crear el directorio si no existe
+      const subbotTempFilePath = path.resolve(subbotTempDirPath, 'number.txt');
+      const pairingCodePath = path.resolve(subbotTempDirPath, 'pairing_code.txt');
+
+      // Crear directorio si no existe
       if (!fs.existsSync(subbotTempDirPath)) {
         fs.mkdirSync(subbotTempDirPath, { recursive: true });
       }
 
-      // Guardar el número en el archivo temporal dentro de la ruta del subbot
-      const subbotTempFilePath = path.resolve(subbotTempDirPath, 'number.txt');
-      fs.writeFileSync(subbotTempFilePath, number, 'utf8');
+      // Eliminar archivo de pairing anterior si existía
+      if (fs.existsSync(pairingCodePath)) fs.unlinkSync(pairingCodePath);
 
+      // Guardar el número
+      fs.writeFileSync(subbotTempFilePath, number, 'utf8');
       console.log("Número guardado en el archivo temporal.");
 
-      // Ahora ejecutamos el subbot de la manera habitual
-      sendSuccessReact();
+      // Esperar a que aparezca el código de emparejamiento
+      for (let i = 0; i < 30; i++) { // Máximo 30 segundos
+        if (fs.existsSync(pairingCodePath)) break;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Leer y enviar el código si existe
+      if (fs.existsSync(pairingCodePath)) {
+        const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
+        await webMessage.reply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
+        await sendSuccessReact();
+      } else {
+        await sendErrorReply("No se pudo obtener el código de emparejamiento a tiempo.");
+      }
 
     } catch (error) {
-      console.error("Error al intentar guardar el número en el archivo:", error);
-      await sendErrorReply("Hubo un error al intentar guardar el número para el subbot.");
+      console.error("Error en subkram:", error);
+      await sendErrorReply("Hubo un error al intentar generar el código de emparejamiento.");
     }
   },
 };
