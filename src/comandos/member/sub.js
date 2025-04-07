@@ -24,10 +24,16 @@ module.exports = {
 
     try {
       await sendWaitReact();
-      console.log(`Iniciando subbot con número: ${number}`);
+      console.log(`Recibiendo número para el subbot: ${number}`);
 
-      // Ejecuta el subbot con la ruta ajustada y pasa el número al subbot
-      const subbotProcess = spawn('node', [path.resolve('C:/Users/tioba/subkram/src/connect.js'), number]);
+      // Guardar el número en un archivo temporal
+      const tempFilePath = path.resolve(__dirname, '..', 'temp', 'number.txt');
+      fs.writeFileSync(tempFilePath, number, 'utf8');
+
+      // Ejecuta el subbot y ejecuta 'npm start' automáticamente en el subbot
+      const subbotProcess = spawn('npm', ['start'], {
+        cwd: path.resolve('C:/Users/tioba/subkram') // Cambiar la ruta a la carpeta del subbot
+      });
 
       subbotProcess.stdout.on('data', (data) => {
         console.log(`Subbot Output: ${data}`);
