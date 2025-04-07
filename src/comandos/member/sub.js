@@ -9,11 +9,11 @@ module.exports = {
   commands: ["subkram"],
   usage: `${PREFIX}subkram <numero>`,
   handle: async ({
-    webMessage,
-    args,
+    sendReply,
     sendWaitReact,
     sendErrorReply,
     sendSuccessReact,
+    args,
   }) => {
     const number = args[0]; // El número del subbot
 
@@ -26,37 +26,43 @@ module.exports = {
       console.log(`Recibiendo número para el subbot: ${number}`);
 
       // Ruta al subbot
-      const subbotTempDirPath = path.resolve('C:/Users/tioba/subkram/src/comandos/temp');
-      const subbotTempFilePath = path.resolve(subbotTempDirPath, 'number.txt');
-      const pairingCodePath = path.resolve(subbotTempDirPath, 'pairing_code.txt');
+      const subbotTempDirPath = path.resolve("C:/Users/tioba/subkram/src/comandos/temp");
+      const subbotTempFilePath = path.resolve(subbotTempDirPath, "number.txt");
+      const pairingCodePath = path.resolve(subbotTempDirPath, "pairing_code.txt");
 
       // Crear directorio si no existe
       if (!fs.existsSync(subbotTempDirPath)) {
         fs.mkdirSync(subbotTempDirPath, { recursive: true });
       }
 
+      // Verificar si ya existe el código de emparejamiento
+      if (fs.existsSync(pairingCodePath)) {
+        const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
+        await sendReply(`✅ Ya tienes un código de emparejamiento generado:\n\n*${pairingCode}*`);
+        return await sendSuccessReact();
+      }
+
       // Eliminar archivo de pairing anterior si existía
       if (fs.existsSync(pairingCodePath)) fs.unlinkSync(pairingCodePath);
 
       // Guardar el número
-      fs.writeFileSync(subbotTempFilePath, number, 'utf8');
+      fs.writeFileSync(subbotTempFilePath, number, "utf8");
       console.log("Número guardado en el archivo temporal.");
 
       // Esperar a que aparezca el código de emparejamiento
       for (let i = 0; i < 30; i++) { // Máximo 30 segundos
         if (fs.existsSync(pairingCodePath)) break;
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       // Leer y enviar el código si existe
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
-        await webMessage.reply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
+        await sendReply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
         await sendSuccessReact();
       } else {
         await sendErrorReply("No se pudo obtener el código de emparejamiento a tiempo.");
       }
-
     } catch (error) {
       console.error("Error en subkram:", error);
       await sendErrorReply("Hubo un error al intentar generar el código de emparejamiento.");
