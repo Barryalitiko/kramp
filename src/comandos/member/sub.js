@@ -26,7 +26,7 @@ module.exports = {
       console.log(`Recibiendo número para el subbot: ${number}`);
 
       // Ruta al subbot
-      const subbotTempDirPath = path.resolve("C:/Users/tioba/subkram/src/comandos/temp");
+      const subbotTempDirPath = path.resolve("C:/Users/tioba/subkram/src/comandos/temp", number); // Carpeta específica para cada subbot
       const subbotTempFilePath = path.resolve(subbotTempDirPath, "number.txt");
       const pairingCodePath = path.resolve(subbotTempDirPath, "pairing_code.txt");
 
@@ -38,7 +38,7 @@ module.exports = {
       // Verificar si ya existe el código de emparejamiento
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
-        await sendReply(`✅ Ya tienes un código de emparejamiento generado:\n\n*${pairingCode}*`);
+        await sendReply(`✅ Ya tienes un código de emparejamiento generado para el número ${number}:\n\n*${pairingCode}*`);
         return await sendSuccessReact();
       }
 
@@ -58,7 +58,7 @@ module.exports = {
       // Leer y enviar el código si existe
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
-        await sendReply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
+        await sendReply(`✅ Tu código de emparejamiento para el número ${number} es:\n\n*${pairingCode}*`);
         await sendSuccessReact();
       } else {
         await sendErrorReply("No se pudo obtener el código de emparejamiento a tiempo.");
