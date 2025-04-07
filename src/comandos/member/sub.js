@@ -38,31 +38,13 @@ module.exports = {
       const tempFilePath = path.resolve(tempDirPath, 'number.txt');
       fs.writeFileSync(tempFilePath, number, 'utf8');
 
-      // Ejecuta el subbot y ejecuta 'npm start' automáticamente en el subbot
-      const subbotProcess = spawn('C:/Program Files/nodejs/npm', ['start'], {
-        cwd: path.resolve('C:/Users/tioba/subkram') // Cambiar la ruta a la carpeta del subbot
-      });
+      console.log("Número guardado en el archivo 'number.txt' en el directorio 'temp'.");
 
-      subbotProcess.stdout.on('data', (data) => {
-        console.log(`Subbot Output: ${data}`);
-      });
-
-      subbotProcess.stderr.on('data', (data) => {
-        console.error(`Subbot Error: ${data}`);
-      });
-
-      subbotProcess.on('close', (code) => {
-        if (code === 0) {
-          console.log("Subbot emparejamiento completado.");
-          sendSuccessReact();
-        } else {
-          sendErrorReply("Error al conectar con el subbot.");
-        }
-      });
+      sendSuccessReact();
 
     } catch (error) {
-      console.error("Error al intentar iniciar el subbot:", error);
-      await sendErrorReply("Hubo un error al intentar ejecutar el subbot.");
+      console.error("Error al intentar guardar el número:", error);
+      await sendErrorReply("Hubo un error al intentar guardar el número.");
     }
   },
 };
