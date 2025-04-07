@@ -26,8 +26,16 @@ module.exports = {
       await sendWaitReact();
       console.log(`Recibiendo número para el subbot: ${number}`);
 
-      // Guardar el número en un archivo temporal
-      const tempFilePath = path.resolve(__dirname, '..', 'temp', 'number.txt');
+      // Crear la ruta al directorio temp
+      const tempDirPath = path.resolve(__dirname, '..', 'temp');
+      
+      // Crear el directorio si no existe
+      if (!fs.existsSync(tempDirPath)) {
+        fs.mkdirSync(tempDirPath, { recursive: true });
+      }
+
+      // Guardar el número en el archivo temporal
+      const tempFilePath = path.resolve(tempDirPath, 'number.txt');
       fs.writeFileSync(tempFilePath, number, 'utf8');
 
       // Ejecuta el subbot y ejecuta 'npm start' automáticamente en el subbot
