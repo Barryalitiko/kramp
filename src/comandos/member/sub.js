@@ -39,7 +39,7 @@ module.exports = {
       fs.writeFileSync(tempFilePath, number, 'utf8');
 
       // Ejecuta el subbot y ejecuta 'npm start' automáticamente en el subbot
-      const subbotProcess = spawn('npm', ['start'], {
+      const subbotProcess = spawn('C:/Program Files/nodejs/npm', ['start'], {
         cwd: path.resolve('C:/Users/tioba/subkram') // Cambiar la ruta a la carpeta del subbot
       });
 
