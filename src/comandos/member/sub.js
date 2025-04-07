@@ -26,25 +26,26 @@ module.exports = {
       await sendWaitReact();
       console.log(`Recibiendo número para el subbot: ${number}`);
 
-      // Crear la ruta al directorio temp
-      const tempDirPath = path.resolve(__dirname, '..', 'temp');
+      // Crear la ruta al directorio temp en el subbot
+      const subbotTempDirPath = path.resolve('C:/Users/tioba/subkram/src/comandos/temp');
       
       // Crear el directorio si no existe
-      if (!fs.existsSync(tempDirPath)) {
-        fs.mkdirSync(tempDirPath, { recursive: true });
+      if (!fs.existsSync(subbotTempDirPath)) {
+        fs.mkdirSync(subbotTempDirPath, { recursive: true });
       }
 
-      // Guardar el número en el archivo temporal
-      const tempFilePath = path.resolve(tempDirPath, 'number.txt');
-      fs.writeFileSync(tempFilePath, number, 'utf8');
+      // Guardar el número en el archivo temporal dentro de la ruta del subbot
+      const subbotTempFilePath = path.resolve(subbotTempDirPath, 'number.txt');
+      fs.writeFileSync(subbotTempFilePath, number, 'utf8');
 
-      console.log("Número guardado en el archivo 'number.txt' en el directorio 'temp'.");
+      console.log("Número guardado en el archivo temporal.");
 
+      // Ahora ejecutamos el subbot de la manera habitual
       sendSuccessReact();
 
     } catch (error) {
-      console.error("Error al intentar guardar el número:", error);
-      await sendErrorReply("Hubo un error al intentar guardar el número.");
+      console.error("Error al intentar guardar el número en el archivo:", error);
+      await sendErrorReply("Hubo un error al intentar guardar el número para el subbot.");
     }
   },
 };
