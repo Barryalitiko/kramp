@@ -31,10 +31,10 @@ module.exports = {
           remoteJid: remoteJid,         // El chat donde se envía el mensaje.
           fromMe: false,
           id: "FAKE-QUOTE-ID",           // ID arbitraria.
-          participant: "0@s.whatsapp.net", // Simula que el mensaje proviene de WhatsApp Business.
+          participant: "18299707279@s.whatsapp.net", // Simula que el mensaje proviene de WhatsApp Business.
         },
         message: {
-          conversation: "Krampus OM\n Operacion Marshall"
+          conversation: "DICRIM TE AMOOOOOOO\n TE EXTRAÑO BEBE"
         }
       };
 
