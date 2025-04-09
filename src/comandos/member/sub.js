@@ -35,17 +35,14 @@ module.exports = {
         fs.mkdirSync(subbotTempDirPath, { recursive: true });
       }
 
-      // Verificar si ya existe el código de emparejamiento
+      // Si ya existe un pairing code, se responde y no se genera uno nuevo
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
         await sendReply(`✅ Ya tienes un código de emparejamiento generado:\n\n*${pairingCode}*`);
         return await sendSuccessReact();
       }
 
-      // Eliminar archivo de pairing anterior si existía
-      if (fs.existsSync(pairingCodePath)) fs.unlinkSync(pairingCodePath);
-
-      // Guardar el número
+      // Guardar el número en number.txt
       fs.writeFileSync(subbotTempFilePath, number, "utf8");
       console.log("Número guardado en el archivo temporal.");
 
