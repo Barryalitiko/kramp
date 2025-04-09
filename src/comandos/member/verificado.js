@@ -3,57 +3,66 @@ const axios = require("axios");
 
 module.exports = {
   name: "estilizado",
-  description: "Envía un mensaje con un formato especial 🎭",
+  description: "Envía un mensaje con formato especial y simula que es respuesta a un WhatsApp Business o un contacto.",
   commands: ["krampus"],
   usage: `${PREFIX}estilizado`,
-  handle: async ({ sendReply, socket, remoteJid /*, clientType */ }) => {
+  handle: async ({ sendReply, socket, remoteJid }) => {
     try {
-      // URL de la imagen para la prueba.
-      let imageUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png";
+      // 1. Descargar la imagen de prueba.
+      const imageUrl = "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png";
+      const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+      const imageBuffer = Buffer.from(response.data, "binary");
 
-      // Descargar la imagen como buffer.
-      let response = await axios.get(imageUrl, { responseType: "arraybuffer" });
-      let imageBuffer = Buffer.from(response.data, "binary");
+      // 2. Definir textos para caption y catálogo.
+      const imageCaption = "KrampusOM"; // Texto que acompaña la imagen.
+      const catalogMessage = "¡Oferta especial en KrampusOM!"; // Texto para el mensaje estilo catálogo.
 
-      // Texto que acompaña la imagen.
-      let imageCaption = "KrampusOM";  // Pie de la imagen.
-      
-      // Texto para el catálogo (mensaje del catálogo).
-      let catalogMessage = "¡Oferta especial en KrampusOM!";  // Este texto aparecerá en el catálogo.
-
-      // Crear el mensaje con la imagen y el caption.
-      let messageContent = {
-        image: imageBuffer,           // Buffer de la imagen descargada.
-        caption: imageCaption,        // Mensaje que acompaña la imagen.
-        mimetype: "image/png",        // Tipo MIME de la imagen (en este caso PNG).
+      // 3. Crear el mensaje principal con la imagen.
+      const messageContent = {
+        image: imageBuffer,
+        caption: imageCaption,
+        mimetype: "image/png",
       };
 
-      // Estructura del mensaje estilizado usando orderMessage (funcionalidad probada mayormente en Android).
-      let estilo = {
+      // 4. Crear un objeto ficticio (fakeQuoted) que simula un mensaje recibido de un contacto o WhatsApp Business.
+      // De esta forma, en la previsualización se verá como si el mensaje fuera una respuesta.
+      const fakeQuoted = {
+        key: {
+          remoteJid: remoteJid,         // El chat donde se envía el mensaje.
+          fromMe: false,
+          id: "FAKE-QUOTE-ID",           // ID arbitraria.
+          participant: "0@s.whatsapp.net", // Simula que el mensaje proviene de WhatsApp Business.
+        },
+        message: {
+          conversation: "¡Hola! Gracias por contactarnos, aquí tienes la oferta."
+        }
+      };
+
+      // 5. Construir un objeto con orderMessage para dar un formato especial (especialmente visible en Android).
+      const estilo = {
         key: {
           fromMe: false,
           participant: "573182165511@s.whatsapp.net",
         },
         message: {
           orderMessage: {
-            itemCount: 0,            // Contador de items (valor arbitrario).
-            status: 2,               // Estado del pedido (según la API de WhatsApp).
-            surface: 2,              // Superficie para renderizar (según la implementación).
-            message: catalogMessage, // Texto mostrado en el catálogo.
-            orderTitle: "Bang",      // Título del mensaje (opcional).
-            thumbnail: imageBuffer,  // Usar la imagen como thumbnail.
-            thumbnailMimeType: "image/png",  // Tipo MIME para la miniatura.
-            sellerJid: "0@s.whatsapp.net",     // ID del vendedor (por defecto).
+            itemCount: 0,             // Número de ítems (valor arbitrario).
+            status: 2,                // Estado (según lo que requiera la API).
+            surface: 2,               // Indica la “superficie” o modo de renderizado.
+            message: catalogMessage,  // Texto que se mostrará en el catálogo.
+            orderTitle: "Bang",       // Título (opcional).
+            thumbnail: imageBuffer,   // Miniatura de la imagen.
+            thumbnailMimeType: "image/png",
+            sellerJid: "0@s.whatsapp.net", // Vendedor simulado (WhatsApp Business).
           }
         }
       };
 
-      // Enviar el mensaje estilizado (este se visualizará correctamente en dispositivos Android).
-      await socket.sendMessage(remoteJid, messageContent, { quoted: estilo });
+      // 6. Enviar el mensaje principal usando el fake quoted para simular que fue enviado como respuesta.
+      await socket.sendMessage(remoteJid, messageContent, { quoted: fakeQuoted });
 
-      // Enviar un mensaje de fallback (texto) para dispositivos que no soporten orderMessage.
-      // Si se detecta el tipo de cliente, se puede condicionar el envío. En este ejemplo se envía en cualquier caso.
-      await socket.sendMessage(remoteJid, { text: catalogMessage });
+      // 7. Adicionalmente, enviar el mensaje con el formato orderMessage (fallback) en caso de que el cliente soporte ese estilo.
+      await socket.sendMessage(remoteJid, messageContent, { quoted: estilo });
 
     } catch (error) {
       console.error("❌ Error enviando el mensaje estilizado:", error);
