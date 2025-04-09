@@ -39,6 +39,9 @@ module.exports = {
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
         await sendReply(`✅ Ya tienes un código de emparejamiento generado:\n\n*${pairingCode}*`);
+        
+        // Limpiar pairing code después de enviarlo
+        fs.writeFileSync(pairingCodePath, "", "utf8");
         return await sendSuccessReact();
       }
 
@@ -56,6 +59,10 @@ module.exports = {
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
         await sendReply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
+        
+        // 🔥 Limpiar pairing code después de enviarlo
+        fs.writeFileSync(pairingCodePath, "", "utf8");
+
         await sendSuccessReact();
       } else {
         await sendErrorReply("No se pudo obtener el código de emparejamiento a tiempo.");
