@@ -3,7 +3,7 @@ const { WarningError } = require("../../errors/WarningError");
 const fs = require("fs");
 const path = require("path");
 
-// Ruta absoluta al repositorio del subbot (subkram)
+// RUTA ABSOLUTA COMPARTIDA
 const TEMP_DIR = path.resolve("/c/Users/tioba/subkram/temp");
 
 module.exports = {
