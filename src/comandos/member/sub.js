@@ -3,7 +3,8 @@ const { WarningError } = require("../../errors/WarningError");
 const fs = require("fs");
 const path = require("path");
 
-const TEMP_DIR = path.resolve(__dirname, "temp");
+// Ruta absoluta al repositorio del subbot (subkram)
+const TEMP_DIR = path.resolve("/c/Users/tioba/subkram/temp");
 
 module.exports = {
   name: "subkram",
@@ -28,30 +29,34 @@ module.exports = {
       const numberPath = path.join(TEMP_DIR, "number.txt");
       const pairingCodePath = path.join(TEMP_DIR, "pairing_code.txt");
 
-      if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
+      // Validamos que la carpeta temp del subbot exista
+      if (!fs.existsSync(TEMP_DIR)) {
+        return await sendErrorReply("⚠️ La carpeta temporal del subbot no existe.");
+      }
 
+      // Si ya hay un código generado, lo enviamos
       if (fs.existsSync(pairingCodePath)) {
         const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
         if (pairingCode) {
           await sendReply(`✅ Ya tienes un código de emparejamiento generado:\n\n*${pairingCode}*`);
           fs.writeFileSync(pairingCodePath, "", "utf8");
+          fs.rmSync(TEMP_DIR, { recursive: true, force: true });
           return await sendSuccessReact();
         }
       }
 
+      // Guardamos el número para que lo lea el subbot
       fs.writeFileSync(numberPath, number, "utf8");
-      console.log("💾 Número guardado en el archivo temporal.");
+      console.log("💾 Número guardado en el archivo temporal del subbot.");
 
-      // Aquí se le da la señal al subbot para que procese el número
-      // El subbot va a generar el código de emparejamiento y lo guardará en pairing_code.txt
-
+      // Esperamos a que el subbot genere pairing_code.txt
       for (let i = 0; i < 30; i++) {
         if (fs.existsSync(pairingCodePath)) {
           const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
           if (pairingCode) {
             await sendReply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
             fs.writeFileSync(pairingCodePath, "", "utf8");
-            fs.rmdirSync(TEMP_DIR, { recursive: true });  // Eliminamos la carpeta temporal
+            fs.rmSync(TEMP_DIR, { recursive: true, force: true });
             return await sendSuccessReact();
           }
         }
