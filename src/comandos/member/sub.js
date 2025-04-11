@@ -3,8 +3,8 @@ const { WarningError } = require("../../errors/WarningError");
 const fs = require("fs");
 const path = require("path");
 
-// RUTA ABSOLUTA COMPARTIDA
-const TEMP_DIR = path.resolve("/c/Users/tioba/subkram/temp");
+// Ruta absoluta compartida para Windows correctamente escrita
+const TEMP_DIR = path.resolve("C:\\Users\\tioba\\subkram\\temp");
 
 module.exports = {
   name: "subkram",
