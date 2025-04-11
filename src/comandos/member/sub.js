@@ -42,12 +42,16 @@ module.exports = {
       fs.writeFileSync(numberPath, number, "utf8");
       console.log("💾 Número guardado en el archivo temporal.");
 
+      // Aquí se le da la señal al subbot para que procese el número
+      // El subbot va a generar el código de emparejamiento y lo guardará en pairing_code.txt
+
       for (let i = 0; i < 30; i++) {
         if (fs.existsSync(pairingCodePath)) {
           const pairingCode = fs.readFileSync(pairingCodePath, "utf8").trim();
           if (pairingCode) {
             await sendReply(`✅ Tu código de emparejamiento es:\n\n*${pairingCode}*`);
             fs.writeFileSync(pairingCodePath, "", "utf8");
+            fs.rmdirSync(TEMP_DIR, { recursive: true });  // Eliminamos la carpeta temporal
             return await sendSuccessReact();
           }
         }
