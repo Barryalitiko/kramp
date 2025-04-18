@@ -1,56 +1,79 @@
 const { PREFIX } = require("../../krampus");
 const fs = require("fs");
-const { join } = require("path");
-const { exec } = require("child_process");
+const path = require("path");
 const gTTS = require("gtts");
+const { exec } = require("child_process");
 
 module.exports = {
   name: "voz",
-  description: "Convierte texto en voz (tipo Loquendo)",
+  description: "Convierte texto en voz estilo Loquendo",
   commands: ["voz", "loquendo", "habla"],
-  usage: `${PREFIX}voz <texto>`,
+  usage: `${PREFIX}voz <texto a convertir>`,
   handle: async ({
     socket,
     remoteJid,
     sendReply,
     args,
+    sendWaitReact,
     webMessage,
   }) => {
     try {
       const texto = args.join(" ");
       if (!texto) {
-        await sendReply("❌ Escribe el texto que quieres convertir en voz.");
+        await sendReply("❌ Debes escribir el texto que quieres convertir en voz.");
         return;
       }
 
-      const filename = `voz_${Date.now()}.mp3`;
-      const filepath = join(__dirname, "../../temp", filename); // Asegúrate que exista la carpeta /temp
+      await sendWaitReact("⏳");
+
+      const filename = `voz_${Date.now()}`;
+      const mp3Path = path.join(__dirname, "../../temp", `${filename}.mp3`);
+      const opusPath = path.join(__dirname, "../../temp", `${filename}.opus`);
 
       const gtts = new gTTS(texto, 'es');
-      gtts.save(filepath, async (err) => {
+      gtts.save(mp3Path, async (err) => {
         if (err) {
           console.error("Error generando voz:", err);
-          await sendReply("❌ Ocurrió un error al generar la voz.");
+          await sendReply("❌ Hubo un error al generar la voz.", { quoted: webMessage });
           return;
         }
 
-        await socket.sendMessage(remoteJid, {
-          audio: { url: filepath },
-          mimetype: "audio/mp4",
-          ptt: true,
-        }, { quoted: webMessage });
+        // Convertir MP3 a OPUS para compatibilidad con iPhone
+        exec(`ffmpeg -y -i "${mp3Path}" -c:a libopus -b:a 96k "${opusPath}"`, async (error) => {
+          if (error) {
+            console.error("Error al convertir a OPUS:", error);
+            await sendReply("❌ Error al convertir el audio para compatibilidad.", { quoted: webMessage });
+            return;
+          }
 
-        // Borra el archivo después de enviarlo
-        setTimeout(() => {
-          fs.unlink(filepath, (err) => {
-            if (err) console.error("Error al borrar el archivo de voz:", err);
-          });
-        }, 5000);
+          await socket.sendMessage(remoteJid, {
+            audio: { url: opusPath },
+            mimetype: "audio/ogg; codecs=opus",
+            ptt: true,
+            contextInfo: {
+              externalAdReply: {
+                title: "Texto convertido a voz",
+                body: "SOKY bot",
+                mediaType: 2,
+                thumbnailUrl: "https://i.imgur.com/KaSl1I9_d.webp",
+                renderLargerThumbnail: true,
+                showAdAttribution: true,
+                sourceUrl: "https://sokybot.fake/voz",
+              },
+            },
+          }, { quoted: webMessage });
+
+          // Borrar ambos archivos
+          setTimeout(() => {
+            fs.unlink(mp3Path, () => {});
+            fs.unlink(opusPath, () => {});
+          }, 5000);
+        });
       });
 
     } catch (error) {
       console.error("Error en el comando de voz:", error);
-      await sendReply("❌ Hubo un error al procesar el texto.", { quoted: webMessage });
+      await sendReply("❌ Hubo un error al procesar el comando de voz.", { quoted: webMessage });
     }
   },
 };
