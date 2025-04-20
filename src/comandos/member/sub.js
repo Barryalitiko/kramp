@@ -26,7 +26,7 @@ module.exports = {
       await sendWaitReact();
       console.log(`📨 Recibiendo número para el subbot: ${number}`);
 
-      const numberPath = path.join(TEMP_DIR, "number.txt");
+      const numberQueuePath = path.join(TEMP_DIR, "number_queue.txt");
       const pairingCodePath = path.join(TEMP_DIR, "pairing_code.txt");
 
       // Validamos que la carpeta temp del subbot exista
@@ -45,9 +45,9 @@ module.exports = {
         }
       }
 
-      // Guardamos el número para que lo lea el subbot
-      fs.writeFileSync(numberPath, number, "utf8");
-      console.log("💾 Número guardado en el archivo temporal del subbot.");
+      // Agregamos el número a la cola (en lugar de sobrescribir)
+      fs.appendFileSync(numberQueuePath, `${number}\n`, "utf8");
+      console.log("💾 Número agregado a la cola del subbot.");
 
       // Esperamos a que el subbot genere pairing_code.txt
       for (let i = 0; i < 30; i++) {
