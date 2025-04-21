@@ -1,6 +1,5 @@
 const { PREFIX } = require("../../krampus");
-const axios = require("axios");
-const cheerio = require("cheerio");
+const puppeteer = require("puppeteer");
 const random = require("random");
 
 module.exports = {
@@ -19,56 +18,58 @@ module.exports = {
     try {
       await sendWaitReact("⏳");
 
-      // URL de la página de actores de IAFD
-      const url = "https://www.iafd.com/actors.asp";
-
-      // Realizar el scraping de la página
-      const response = await axios.get(url);
-      const $ = cheerio.load(response.data);
-
-      // Obtener los enlaces de los perfiles de actrices
-      const actressLinks = [];
-      $("a.actor_link").each((i, element) => {
-        const link = $(element).attr("href");
-        if (link) {
-          actressLinks.push(link);
-        }
+      // Lanzar el navegador
+      const browser = await puppeteer.launch({
+        headless: true, 
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
       });
+      const page = await browser.newPage();
+
+      // Ir a la página de actrices
+      const url = "https://www.iafd.com/actors.asp";
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+
+      // Extraer los enlaces de las actrices
+      const actressLinks = await page.$$eval("a.actor_link", links =>
+        links.map(link => link.getAttribute("href"))
+      );
+
+      if (actressLinks.length === 0) {
+        await browser.close();
+        await sendReply("❌ No se encontraron actrices disponibles.", { quoted: webMessage });
+        return;
+      }
 
       // Elegir una actriz al azar
       const randomIndex = random.int(0, actressLinks.length - 1);
       const randomActressLink = actressLinks[randomIndex];
-
-      // Construir la URL completa del perfil de la actriz
       const actressUrl = `https://www.iafd.com/${randomActressLink}`;
 
-      // Obtener detalles del perfil de la actriz
-      const actressPage = await axios.get(actressUrl);
-      const $$ = cheerio.load(actressPage.data);
+      // Navegar al perfil de la actriz
+      await page.goto(actressUrl, { waitUntil: "domcontentloaded" });
 
-      // Obtener el nombre de la actriz y la lista de películas
-      const actressName = $$("h1.actor_name").text().trim();
-      const moviesList = [];
-      $$("div.filmography a").each((i, element) => {
-        const movie = $$(element).text().trim();
-        if (movie) {
-          moviesList.push(movie);
-        }
-      });
+      // Obtener el nombre de la actriz
+      const actressName = await page.$eval("h1.actor_name", el => el.innerText.trim());
+
+      // Obtener las películas
+      const moviesList = await page.$$eval("div.filmography a", elements =>
+        elements.map(el => el.innerText.trim()).filter(txt => txt.length > 0)
+      );
+
+      await browser.close();
 
       if (moviesList.length === 0) {
-        await sendReply("❌ No se encontró información sobre las películas de esta actriz.", { quoted: webMessage });
+        await sendReply(`❌ No se encontró información sobre las películas de *${actressName}*.`, { quoted: webMessage });
         return;
       }
 
-      const movieRecommendation = moviesList.length > 0 ? moviesList[0] : "No disponible";
+      const movieRecommendation = moviesList[0];
 
       // Crear mensaje de recomendación
       const message = `🌟 Hoy te recomendamos a: *${actressName}* 🎬
       
-      📽️ Primera película recomendada: *${movieRecommendation}*`;
+📽️ Primera película recomendada: *${movieRecommendation}*`;
 
-      // Enviar el mensaje con la recomendación
       await sendReply(message, { quoted: webMessage });
 
     } catch (error) {
