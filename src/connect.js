@@ -13,6 +13,9 @@ const {
 } = require("@whiskeysockets/baileys");
 const NodeCache = require("node-cache");
 const pino = require("pino");
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
 const { load } = require("./loader");
 const {
   warningLog,
@@ -23,18 +26,76 @@ const {
 } = require("./utils/logger");
 
 const msgRetryCounterCache = new NodeCache();
-
 const store = makeInMemoryStore({
   logger: pino().child({ level: "silent", stream: "store" }),
+});
+
+// Servidor Localhost Satánico
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+let connectionStatus = "desconectado";
+let pairingCode = "N/A";
+
+app.get("/", (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Krampus Stats</title>
+        <style>
+          body {
+            background-color: #0a0000;
+            color: #ff0000;
+            font-family: 'Creepster', cursive;
+            text-align: center;
+            padding: 50px;
+          }
+          h1 {
+            font-size: 50px;
+            text-shadow: 0 0 10px #ff0000, 0 0 30px #ff0000;
+            animation: flicker 1.5s infinite alternate;
+          }
+          .status {
+            font-size: 30px;
+            margin-top: 20px;
+          }
+          .pairing {
+            font-size: 20px;
+            margin-top: 10px;
+          }
+          @keyframes flicker {
+            from { text-shadow: 0 0 10px #ff0000; }
+            to { text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>🔥 Krampus Bot 🔥</h1>
+        <div class="status">Estado: <span id="status">Cargando...</span></div>
+        <div class="pairing">Código: <span id="pairing">Esperando...</span></div>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+          const socket = io();
+          socket.on('statusUpdate', data => {
+            document.getElementById('status').textContent = data.connection;
+            document.getElementById('pairing').textContent = data.pairingCode || 'N/A';
+          });
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+server.listen(3000, () => {
+  console.log("Servidor satánico corriendo en http://localhost:3000");
 });
 
 async function getMessage(key) {
   if (!store) {
     return proto.Message.fromObject({});
   }
-
   const msg = await store.loadMessage(key.remoteJid, key.id);
-
   return msg ? msg.message : undefined;
 }
 
@@ -62,26 +123,27 @@ async function connect() {
 
   if (!socket.authState.creds.registered) {
     warningLog("Credenciales no configuradas!");
-
     infoLog('Ingrese su numero sin el + (ejemplo: "13733665556"):');
-
     const phoneNumber = await question("Ingresa el numero: ");
-
     if (!phoneNumber) {
-      errorLog(
-        'Numero de telefono inválido! Reinicia con el comando "npm start".'
-      );
-
+      errorLog('Numero inválido! Reinicia con "npm start".');
       process.exit(1);
     }
-
     const code = await socket.requestPairingCode(onlyNumbers(phoneNumber));
-
     sayLog(`Código de Emparejamiento: ${code}`);
+    pairingCode = code;
+    io.emit("statusUpdate", { connection: connectionStatus, pairingCode });
   }
 
   socket.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
+    connectionStatus = connection;
+    if (update.pairingCode) pairingCode = update.pairingCode;
+
+    io.emit("statusUpdate", {
+      connection: connectionStatus,
+      pairingCode,
+    });
 
     if (connection === "close") {
       const statusCode =
@@ -116,7 +178,6 @@ async function connect() {
             warningLog("Servicio no disponible!");
             break;
         }
-
         const newSocket = await connect();
         load(newSocket);
       }
