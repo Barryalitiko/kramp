@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con el nombre interno corregido (por ejemplo: "GraffitiFont")
-registerFont(path.resolve(__dirname, "../../../assets/fonts/GraffitiFont.ttf"), {
-  family: "GraffitiFont",
+// Registrar la fuente con su nombre interno original (ajústalo a lo que aparece en FontDrop)
+registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
+  family: "Wholecar PERSONAL USE ONLY", // Usar exactamente el nombre que aparece
 });
 
 module.exports = {
@@ -46,7 +46,7 @@ module.exports = {
 
       // Texto en estilo grafiti con fuente registrada
       ctx.fillStyle = "#ff3cac";
-      ctx.font = "70px 'GraffitiFont'";
+      ctx.font = "70px 'Wholecar PERSONAL USE ONLY'"; // Asegúrate de usar el nombre correcto
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
