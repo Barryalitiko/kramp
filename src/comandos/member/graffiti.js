@@ -4,7 +4,7 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente una vez cuando la aplicación inicie
+// Registrar la fuente una vez
 const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf");
 registerFont(fontPath, { family: "Break Age" });
 
@@ -37,17 +37,35 @@ module.exports = {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Sombra para efecto más urbano
-      ctx.shadowColor = "rgba(0,0,0,0.6)";
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 4;
-      ctx.shadowOffsetY = 4;
+      // Configurar fuente
+      const fontSize = 80;
+      ctx.font = `${fontSize}px 'Break Age'`;
 
-      // Usar la fuente registrada
-      ctx.fillStyle = "#ff3cac"; // Color vibrante
-      ctx.font = "70px 'Break Age'"; // Usar la fuente registrada
-      ctx.fillText(texto, 50, 180);
+      // Medir texto para centrar
+      const textWidth = ctx.measureText(texto).width;
+      const x = (canvas.width - textWidth) / 2;
+      const y = 180;
 
+      // Sombra sutil para dar volumen
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+
+      // Dibujar borde negro
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#000000";
+      ctx.strokeText(texto, x, y);
+
+      // Crear gradiente de colores
+      const gradient = ctx.createLinearGradient(x, y - fontSize, x + textWidth, y);
+      gradient.addColorStop(0, "#ff3cac"); // Rosa
+      gradient.addColorStop(1, "#784ba0"); // Violeta
+
+      ctx.fillStyle = gradient;
+      ctx.fillText(texto, x, y);
+
+      // Guardar imagen
       const outputPath = path.join(__dirname, "temp_grafiti.png");
       const out = fs.createWriteStream(outputPath);
       const stream = canvas.createPNGStream();
