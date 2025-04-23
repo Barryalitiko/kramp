@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con su nombre interno original (ajústalo a lo que aparece en FontDrop)
-registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
-  family: "Wholecar PERSONAL USE ONLY", // Usar exactamente el nombre que aparece
+// Registrar la fuente con su nombre interno
+registerFont(path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf"), {
+  family: "Break Age",
 });
 
 module.exports = {
@@ -38,15 +38,15 @@ module.exports = {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Sombra para efecto más urbano
+      // Sombra urbana
       ctx.shadowColor = "rgba(0,0,0,0.6)";
       ctx.shadowBlur = 6;
       ctx.shadowOffsetX = 4;
       ctx.shadowOffsetY = 4;
 
-      // Texto en estilo grafiti con fuente registrada
-      ctx.fillStyle = "#ff3cac";
-      ctx.font = "70px 'Wholecar PERSONAL USE ONLY'"; // Asegúrate de usar el nombre correcto
+      // Texto grafiti
+      ctx.fillStyle = "#00c3ff"; // Color vibrante
+      ctx.font = "70px 'Break Age'";
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
