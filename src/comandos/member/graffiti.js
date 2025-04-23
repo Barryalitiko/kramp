@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con su nombre interno correcto
+// Intenta usar un nombre más simple y directo para la fuente
 registerFont(path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf"), {
-  family: "Break Age Graffiti", // Usa el nombre interno exacto
+  family: "BreakAge", // Nombre simple
 });
 
 module.exports = {
@@ -46,7 +46,7 @@ module.exports = {
 
       // Texto en estilo grafiti
       ctx.fillStyle = "#00c3ff"; // Color vibrante
-      ctx.font = "70px 'Break Age Graffiti'"; // Usamos el nombre interno exacto
+      ctx.font = "70px 'BreakAge'"; // Usa el mismo nombre
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
