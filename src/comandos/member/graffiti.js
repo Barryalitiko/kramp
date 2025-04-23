@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con su nombre interno correcto
+// Registrar la fuente con el nombre interno corregido (por ejemplo: "GraffitiFont")
 registerFont(path.resolve(__dirname, "../../../assets/fonts/GraffitiFont.ttf"), {
-  family: "GraffitiFont", // Usa aquí el nombre interno corregido que le diste
+  family: "GraffitiFont",
 });
 
 module.exports = {
@@ -44,8 +44,8 @@ module.exports = {
       ctx.shadowOffsetX = 4;
       ctx.shadowOffsetY = 4;
 
-      // Texto en estilo grafiti
-      ctx.fillStyle = "#ff3cac"; // Color vibrante
+      // Texto en estilo grafiti con fuente registrada
+      ctx.fillStyle = "#ff3cac";
       ctx.font = "70px 'GraffitiFont'";
       ctx.fillText(texto, 50, 180);
 
