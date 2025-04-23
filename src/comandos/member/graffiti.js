@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con su nombre interno
+// Registrar la fuente con su nombre interno correcto
 registerFont(path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf"), {
-  family: "Break Age",
+  family: "Break Age Graffiti", // Usa el nombre interno exacto
 });
 
 module.exports = {
@@ -38,15 +38,15 @@ module.exports = {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Sombra urbana
+      // Sombra para efecto más urbano
       ctx.shadowColor = "rgba(0,0,0,0.6)";
       ctx.shadowBlur = 6;
       ctx.shadowOffsetX = 4;
       ctx.shadowOffsetY = 4;
 
-      // Texto grafiti
+      // Texto en estilo grafiti
       ctx.fillStyle = "#00c3ff"; // Color vibrante
-      ctx.font = "70px 'Break Age'";
+      ctx.font = "70px 'Break Age Graffiti'"; // Usamos el nombre interno exacto
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
