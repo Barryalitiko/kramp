@@ -6,7 +6,7 @@ const path = require("path");
 
 // Registrar la fuente con su nombre interno correcto
 registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
-  family: "Wholecar PERSONAL USE ONLY",
+  family: "GraffitiFont", // Usa aquí el nombre interno corregido que le diste
 });
 
 module.exports = {
@@ -46,7 +46,7 @@ module.exports = {
 
       // Texto en estilo grafiti
       ctx.fillStyle = "#ff3cac"; // Color vibrante
-      ctx.font = "70px 'Wholecar PERSONAL USE ONLY'";
+      ctx.font = "70px 'GraffitiFont'";
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
