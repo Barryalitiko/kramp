@@ -1,21 +1,8 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
-const { createCanvas, registerFont } = require("canvas");
+const sharp = require("sharp");
 const fs = require("fs");
 const path = require("path");
-const opn = require("opentype.js"); // Importar opentype.js
-
-// Ruta al archivo de la fuente
-const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf");
-
-// Leer la fuente para obtener el nombre interno
-const font = opn.loadSync(fontPath);
-const fontName = font.names.fontFamily.en || "BreakAge"; // Nombre interno de la fuente, si no, usamos un nombre por defecto
-
-// Registrar la fuente con su nombre interno correcto
-registerFont(fontPath, {
-  family: fontName, // Usar el nombre interno detectado
-});
 
 module.exports = {
   name: "grafiti",
@@ -39,34 +26,34 @@ module.exports = {
     await sendWaitReact();
 
     try {
-      const canvas = createCanvas(900, 300);
-      const ctx = canvas.getContext("2d");
-
-      // Fondo blanco
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Sombra para efecto más urbano
-      ctx.shadowColor = "rgba(0,0,0,0.6)";
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 4;
-      ctx.shadowOffsetY = 4;
-
-      // Texto en estilo grafiti
-      ctx.fillStyle = "#00c3ff"; // Color vibrante
-      ctx.font = `70px '${fontName}'`; // Usamos el nombre interno automáticamente
-      ctx.fillText(texto, 50, 180);
+      // Definir la ruta de la fuente
+      const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break-Age.ttf");
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
-      const out = fs.createWriteStream(outputPath);
-      const stream = canvas.createPNGStream();
-      stream.pipe(out);
 
-      out.on("finish", async () => {
-        await sendSuccessReact();
-        await sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti!");
-        fs.unlinkSync(outputPath);
-      });
+      // Usar sharp para crear la imagen
+      sharp({
+        create: {
+          width: 900,
+          height: 300,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
+        },
+      })
+        .text(texto, 50, 150, {
+          font: '70px "Break Age"', // Asegúrate de que esta fuente esté bien referenciada
+          fill: "#ff3cac", // Color del texto
+        })
+        .toFile(outputPath, (err, info) => {
+          if (err) {
+            console.error("Error creando la imagen:", err);
+            sendErrorReply("Ocurrió un error al crear la imagen de grafiti.");
+          } else {
+            sendSuccessReact();
+            sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti!");
+            fs.unlinkSync(outputPath); // Eliminar la imagen temporal después de enviarla
+          }
+        });
     } catch (error) {
       console.error("Error al generar el grafiti:", error);
       await sendErrorReply("Ocurrió un error al crear la imagen de grafiti.");
