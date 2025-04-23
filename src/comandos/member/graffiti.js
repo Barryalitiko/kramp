@@ -38,8 +38,14 @@ module.exports = {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      // Sombra para efecto más urbano
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 4;
+
       // Texto en estilo grafiti
-      ctx.fillStyle = "#000000";
+      ctx.fillStyle = "#ff3cac"; // Color vibrante
       ctx.font = "70px 'Wholecar PERSONAL USE ONLY'";
       ctx.fillText(texto, 50, 180);
 
