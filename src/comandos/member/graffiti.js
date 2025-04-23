@@ -3,10 +3,18 @@ const { WarningError } = require("../../errors/WarningError");
 const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
+const opn = require("opentype.js"); // Importar opentype.js
 
-// Intenta usar un nombre más simple y directo para la fuente
-registerFont(path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf"), {
-  family: "BreakAge", // Nombre simple
+// Ruta al archivo de la fuente
+const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf");
+
+// Leer la fuente para obtener el nombre interno
+const font = opn.loadSync(fontPath);
+const fontName = font.names.fontFamily.en || "BreakAge"; // Nombre interno de la fuente, si no, usamos un nombre por defecto
+
+// Registrar la fuente con su nombre interno correcto
+registerFont(fontPath, {
+  family: fontName, // Usar el nombre interno detectado
 });
 
 module.exports = {
@@ -46,7 +54,7 @@ module.exports = {
 
       // Texto en estilo grafiti
       ctx.fillStyle = "#00c3ff"; // Color vibrante
-      ctx.font = "70px 'BreakAge'"; // Usa el mismo nombre
+      ctx.font = `70px '${fontName}'`; // Usamos el nombre interno automáticamente
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
