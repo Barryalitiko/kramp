@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 // Registrar la fuente con la ruta que mencionaste
-registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.otf"), {
+registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
   family: "GraffitiFont",
 });
 
