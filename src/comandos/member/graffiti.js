@@ -4,7 +4,6 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente una vez
 const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf");
 registerFont(fontPath, { family: "Break Age" });
 
@@ -33,39 +32,32 @@ module.exports = {
       const canvas = createCanvas(900, 300);
       const ctx = canvas.getContext("2d");
 
-      // Fondo blanco
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // No dibujamos ningún fondo, será transparente
 
-      // Configurar fuente
       const fontSize = 80;
       ctx.font = `${fontSize}px 'Break Age'`;
-
-      // Medir texto para centrar
       const textWidth = ctx.measureText(texto).width;
       const x = (canvas.width - textWidth) / 2;
       const y = 180;
 
-      // Sombra sutil para dar volumen
+      // Sombra ligera para realce
       ctx.shadowColor = "rgba(0,0,0,0.3)";
       ctx.shadowBlur = 4;
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 2;
 
-      // Dibujar borde negro
+      // Borde negro
       ctx.lineWidth = 6;
       ctx.strokeStyle = "#000000";
       ctx.strokeText(texto, x, y);
 
-      // Crear gradiente de colores
+      // Gradiente
       const gradient = ctx.createLinearGradient(x, y - fontSize, x + textWidth, y);
-      gradient.addColorStop(0, "#ff3cac"); // Rosa
-      gradient.addColorStop(1, "#784ba0"); // Violeta
-
+      gradient.addColorStop(0, "#ff3cac");
+      gradient.addColorStop(1, "#784ba0");
       ctx.fillStyle = gradient;
       ctx.fillText(texto, x, y);
 
-      // Guardar imagen
       const outputPath = path.join(__dirname, "temp_grafiti.png");
       const out = fs.createWriteStream(outputPath);
       const stream = canvas.createPNGStream();
@@ -73,7 +65,7 @@ module.exports = {
 
       out.on("finish", async () => {
         await sendSuccessReact();
-        await sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti!");
+        await sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti (fondo transparente)!");
         fs.unlinkSync(outputPath);
       });
     } catch (error) {
