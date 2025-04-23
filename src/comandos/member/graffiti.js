@@ -4,6 +4,10 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
+// Registrar la fuente una vez cuando la aplicación inicie
+const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break_Age.ttf");
+registerFont(fontPath, { family: "Break Age" });
+
 module.exports = {
   name: "grafiti",
   description: "Convierte un texto en una imagen con estilo grafiti",
@@ -26,7 +30,6 @@ module.exports = {
     await sendWaitReact();
 
     try {
-      // Crear el lienzo
       const canvas = createCanvas(900, 300);
       const ctx = canvas.getContext("2d");
 
@@ -40,9 +43,9 @@ module.exports = {
       ctx.shadowOffsetX = 4;
       ctx.shadowOffsetY = 4;
 
-      // Usar la fuente instalada globalmente
+      // Usar la fuente registrada
       ctx.fillStyle = "#ff3cac"; // Color vibrante
-      ctx.font = "70px 'Break Age'"; // Usar la fuente instalada
+      ctx.font = "70px 'Break Age'"; // Usar la fuente registrada
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
