@@ -1,6 +1,6 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
-const sharp = require("sharp");
+const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
@@ -26,34 +26,35 @@ module.exports = {
     await sendWaitReact();
 
     try {
-      // Definir la ruta de la fuente
-      const fontPath = path.resolve(__dirname, "../../../assets/fonts/Break-Age.ttf");
+      // Crear el lienzo
+      const canvas = createCanvas(900, 300);
+      const ctx = canvas.getContext("2d");
+
+      // Fondo blanco
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Sombra para efecto más urbano
+      ctx.shadowColor = "rgba(0,0,0,0.6)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 4;
+
+      // Usar la fuente instalada globalmente
+      ctx.fillStyle = "#ff3cac"; // Color vibrante
+      ctx.font = "70px 'Break Age'"; // Usar la fuente instalada
+      ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
+      const out = fs.createWriteStream(outputPath);
+      const stream = canvas.createPNGStream();
+      stream.pipe(out);
 
-      // Usar sharp para crear la imagen
-      sharp({
-        create: {
-          width: 900,
-          height: 300,
-          channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-        },
-      })
-        .text(texto, 50, 150, {
-          font: '70px "Break Age"', // Asegúrate de que esta fuente esté bien referenciada
-          fill: "#ff3cac", // Color del texto
-        })
-        .toFile(outputPath, (err, info) => {
-          if (err) {
-            console.error("Error creando la imagen:", err);
-            sendErrorReply("Ocurrió un error al crear la imagen de grafiti.");
-          } else {
-            sendSuccessReact();
-            sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti!");
-            fs.unlinkSync(outputPath); // Eliminar la imagen temporal después de enviarla
-          }
-        });
+      out.on("finish", async () => {
+        await sendSuccessReact();
+        await sendImageFromFile(outputPath, "Aquí tienes tu texto en grafiti!");
+        fs.unlinkSync(outputPath);
+      });
     } catch (error) {
       console.error("Error al generar el grafiti:", error);
       await sendErrorReply("Ocurrió un error al crear la imagen de grafiti.");
