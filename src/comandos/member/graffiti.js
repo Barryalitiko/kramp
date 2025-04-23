@@ -4,9 +4,9 @@ const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-// Registrar la fuente con la ruta que mencionaste
+// Registrar la fuente con su nombre interno correcto
 registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
-  family: "GraffitiFont",
+  family: "Wholecar PERSONAL USE ONLY",
 });
 
 module.exports = {
@@ -38,9 +38,9 @@ module.exports = {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Texto grafiti
+      // Texto en estilo grafiti
       ctx.fillStyle = "#000000";
-      ctx.font = "70px GraffitiFont";
+      ctx.font = "70px 'Wholecar PERSONAL USE ONLY'";
       ctx.fillText(texto, 50, 180);
 
       const outputPath = path.join(__dirname, "temp_grafiti.png");
