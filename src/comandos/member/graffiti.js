@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 // Registrar la fuente con su nombre interno correcto
-registerFont(path.resolve(__dirname, "../../../assets/fonts/graffiti.ttf"), {
+registerFont(path.resolve(__dirname, "../../../assets/fonts/GraffitiFont.ttf"), {
   family: "GraffitiFont", // Usa aquí el nombre interno corregido que le diste
 });
 
