@@ -18,8 +18,11 @@ module.exports = {
     console.log("Iniciando comando progressbar...");
     await sendWaitReact();
 
-    const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
-    const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
+    const tempDir = path.join(__dirname, "progress_temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+    const htmlFilePath = path.join(tempDir, "progressbar.html");
+    const gifOutputPath = path.join(tempDir, "progressbar.gif");
 
     try {
       // Crear HTML
@@ -69,32 +72,36 @@ module.exports = {
       fs.writeFileSync(htmlFilePath, htmlContent);
 
       console.log("Iniciando Puppeteer...");
-      const browser = await puppeteer.launch({ headless: "new" }); // mejor opción para Puppeteer nuevo
+      const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox"] });
       const page = await browser.newPage();
       await page.goto(`file://${htmlFilePath}`);
-      await page.setViewport({ width: 800, height: 600 });
+      await page.setViewport({ width: 400, height: 300 }); // **Viewport reducido para que pese menos**
 
-      // Capturar frames en memoria
+      // Capturar frames
       console.log("Capturando frames en memoria...");
       const frames = [];
-      for (let i = 0; i <= 50; i++) {
+      const totalFrames = 20; // **Reducimos para que no sea pesado**
+
+      for (let i = 0; i <= totalFrames; i++) {
         await page.evaluate((progress) => {
           const div = document.querySelector('.progress-bar > div');
           div.style.width = `${progress}%`;
           div.innerText = `${Math.floor(progress)}%`;
-        }, i * 2);
+        }, i * (100 / totalFrames));
 
         const buffer = await page.screenshot({ type: 'png' });
         frames.push(buffer);
-        await new Promise((res) => setTimeout(res, 50)); // Más rápido: 50ms entre frames
+
+        await new Promise((res) => setTimeout(res, 50)); // 50ms de espera
       }
 
       console.log("Cerrando navegador...");
       await browser.close();
 
-      // Crear stream desde frames
+      // Crear stream
       console.log("Creando stream para ffmpeg...");
       const inputStream = new stream.PassThrough();
+
       (async () => {
         for (const frame of frames) {
           inputStream.write(frame);
@@ -102,17 +109,22 @@ module.exports = {
         inputStream.end();
       })();
 
-      // Crear el GIF
       console.log("Generando GIF...");
       await new Promise((resolve, reject) => {
         ffmpeg(inputStream)
           .inputFormat('image2pipe')
-          .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
+          .outputOptions([
+            '-vf', 'fps=8,scale=320:-1:flags=lanczos', // fps bajo y resolución más pequeña
+            '-y'
+          ])
           .output(gifOutputPath)
           .on('end', resolve)
           .on('error', reject)
           .run();
       });
+
+      console.log("Esperando para enviar GIF...");
+      await new Promise(res => setTimeout(res, 1500)); // Delay para evitar Rate Limit
 
       console.log("Enviando GIF...");
       await sendSuccessReact();
@@ -129,6 +141,7 @@ module.exports = {
       try {
         if (fs.existsSync(htmlFilePath)) fs.unlinkSync(htmlFilePath);
         if (fs.existsSync(gifOutputPath)) fs.unlinkSync(gifOutputPath);
+        if (fs.existsSync(tempDir)) fs.rmdirSync(tempDir);
       } catch (err) {
         console.error("Error al limpiar archivos:", err);
       }
