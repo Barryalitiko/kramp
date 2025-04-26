@@ -14,15 +14,12 @@ module.exports = {
   description: "Genera un GIF con una barra de progreso animada.",
   commands: ["progressbar"],
   usage: `${PREFIX}progressbar`,
-  handle: async ({ args, sendVideoFromFile, sendWaitReact, sendSuccessReact, sendErrorReply, remoteJid }) => {
+  handle: async ({ socket, args, sendWaitReact, sendSuccessReact, sendErrorReply, remoteJid }) => {
     console.log("Iniciando comando progressbar...");
     await sendWaitReact();
 
-    const tempDir = path.join(__dirname, "progress_temp");
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
-
-    const htmlFilePath = path.join(tempDir, "progressbar.html");
-    const gifOutputPath = path.join(tempDir, "progressbar.gif");
+    const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
+    const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
 
     try {
       // Crear HTML
@@ -72,36 +69,32 @@ module.exports = {
       fs.writeFileSync(htmlFilePath, htmlContent);
 
       console.log("Iniciando Puppeteer...");
-      const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox"] });
+      const browser = await puppeteer.launch({ headless: "new" });
       const page = await browser.newPage();
       await page.goto(`file://${htmlFilePath}`);
-      await page.setViewport({ width: 400, height: 300 }); // **Viewport reducido para que pese menos**
+      await page.setViewport({ width: 800, height: 600 });
 
-      // Capturar frames
+      // Capturar frames en memoria
       console.log("Capturando frames en memoria...");
       const frames = [];
-      const totalFrames = 20; // **Reducimos para que no sea pesado**
-
-      for (let i = 0; i <= totalFrames; i++) {
+      for (let i = 0; i <= 50; i++) {
         await page.evaluate((progress) => {
           const div = document.querySelector('.progress-bar > div');
           div.style.width = `${progress}%`;
           div.innerText = `${Math.floor(progress)}%`;
-        }, i * (100 / totalFrames));
+        }, i * 2);
 
         const buffer = await page.screenshot({ type: 'png' });
         frames.push(buffer);
-
-        await new Promise((res) => setTimeout(res, 50)); // 50ms de espera
+        await new Promise((res) => setTimeout(res, 50)); // 50ms entre frames
       }
 
       console.log("Cerrando navegador...");
       await browser.close();
 
-      // Crear stream
+      // Crear stream desde frames
       console.log("Creando stream para ffmpeg...");
       const inputStream = new stream.PassThrough();
-
       (async () => {
         for (const frame of frames) {
           inputStream.write(frame);
@@ -109,28 +102,24 @@ module.exports = {
         inputStream.end();
       })();
 
+      // Crear el GIF
       console.log("Generando GIF...");
       await new Promise((resolve, reject) => {
         ffmpeg(inputStream)
           .inputFormat('image2pipe')
-          .outputOptions([
-            '-vf', 'fps=8,scale=320:-1:flags=lanczos', // fps bajo y resolución más pequeña
-            '-y'
-          ])
+          .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
           .output(gifOutputPath)
           .on('end', resolve)
           .on('error', reject)
           .run();
       });
 
-      console.log("Esperando para enviar GIF...");
-      await new Promise(res => setTimeout(res, 1500)); // Delay para evitar Rate Limit
-
       console.log("Enviando GIF...");
       await sendSuccessReact();
-      await sendVideoFromFile(remoteJid, gifOutputPath, {
+      await socket.sendMessage(remoteJid, {
+        video: fs.readFileSync(gifOutputPath),
         caption: "Aquí tienes tu barra de progreso animada.",
-        gifPlayback: true,
+        gifPlayback: true
       });
 
     } catch (error) {
@@ -141,7 +130,6 @@ module.exports = {
       try {
         if (fs.existsSync(htmlFilePath)) fs.unlinkSync(htmlFilePath);
         if (fs.existsSync(gifOutputPath)) fs.unlinkSync(gifOutputPath);
-        if (fs.existsSync(tempDir)) fs.rmdirSync(tempDir);
       } catch (err) {
         console.error("Error al limpiar archivos:", err);
       }
