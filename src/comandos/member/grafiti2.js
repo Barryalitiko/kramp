@@ -1,12 +1,8 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
-const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
-
-// Registrar la fuente Spring Break
-const fontPath = path.resolve(__dirname, "../../../assets/fonts/Spring_Break.ttf");
-registerFont(fontPath, { family: "Spring Break" });
+const { exec } = require("child_process");
 
 module.exports = {
   name: "spring",
@@ -30,50 +26,57 @@ module.exports = {
     await sendWaitReact();
 
     try {
-      const canvas = createCanvas(1000, 300);
-      const ctx = canvas.getContext("2d");
-
-      // Fondo transparente por defecto, así que no pintamos el fondo
-
-      ctx.font = "80px 'Spring Break'";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-
-      const x = canvas.width / 2;
-      const y = canvas.height / 2;
-
-      // Sombra suave
-      ctx.shadowColor = "rgba(0,0,0,0.3)";
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 5;
-      ctx.shadowOffsetY = 5;
-
-      // Borde negro
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = "black";
-      ctx.strokeText(texto, x, y);
-
-      // Gradiente tipo sunset
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-      gradient.addColorStop(0, "#ff6a00"); // naranja
-      gradient.addColorStop(0.5, "#ff0084"); // fucsia
-      gradient.addColorStop(1, "#6a00ff"); // violeta
-
-      ctx.fillStyle = gradient;
-      ctx.fillText(texto, x, y);
-
+      const svgPath = path.join(__dirname, "temp_spring.svg");
       const outputPath = path.join(__dirname, "temp_spring.png");
-      const out = fs.createWriteStream(outputPath);
-      const stream = canvas.createPNGStream();
-      stream.pipe(out);
 
-      out.on("finish", async () => {
+      const fontPath = path.resolve(__dirname, "../../../assets/fonts/Spring_Break.ttf");
+      const fontFamily = "Spring Break";
+
+      const svgContent = `
+        <svg width="1000" height="300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <style type="text/css">
+              @font-face {
+                font-family: '${fontFamily}';
+                src: url('file://${fontPath}');
+              }
+              .text {
+                font-family: '${fontFamily}';
+                font-size: 80px;
+                fill: url(#gradient);
+                stroke: black;
+                stroke-width: 8px;
+                paint-order: stroke fill;
+              }
+            </style>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ff6a00" />
+              <stop offset="50%" stop-color="#ff0084" />
+              <stop offset="100%" stop-color="#6a00ff" />
+            </linearGradient>
+          </defs>
+          <rect width="100%" height="100%" fill="transparent"/>
+          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="text">${texto}</text>
+        </svg>
+      `;
+
+      fs.writeFileSync(svgPath, svgContent);
+
+      const command = `ffmpeg -y -i "${svgPath}" -vf "scale=1000:300" "${outputPath}"`;
+
+      exec(command, async (err) => {
+        fs.unlinkSync(svgPath);
+        if (err) {
+          console.error("Error al ejecutar ffmpeg:", err);
+          return await sendErrorReply("Error al generar la imagen con ffmpeg.");
+        }
+
         await sendSuccessReact();
         await sendImageFromFile(outputPath, "¡Aquí tienes tu texto con estilo Spring!");
         fs.unlinkSync(outputPath);
       });
     } catch (error) {
-      console.error("Error al generar el texto:", error);
+      console.error("Error general:", error);
       await sendErrorReply("Ocurrió un error al crear la imagen.");
     }
   },
