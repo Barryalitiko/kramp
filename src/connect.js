@@ -9,7 +9,7 @@ const {
   isJidStatusBroadcast,
   proto,
   isJidNewsletter,
-} = require("@whiskeysockets/baileys");
+} = require("@whiskeysockets/baileys"); // <--- Se cambia la importación
 
 const NodeCache = require("node-cache");
 const pino = require("pino");
@@ -26,16 +26,8 @@ const msgRetryCounterCache = new NodeCache();
 const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectAttempts = 0;
 
-async function deleteJsonFiles() {
-  const authPath = path.resolve(__dirname, "..", "assets", "auth", "baileys");
-  const files = fs.readdirSync(authPath);
-
-  files.forEach(file => {
-    if (file.endsWith(".json") && file !== "creds.json") { // No eliminamos creds.json
-      fs.unlinkSync(path.join(authPath, file));
-      console.log(`Archivo ${file} eliminado.`);
-    }
-  });
+async function getMessage(key) {
+  return proto.Message.fromObject({});
 }
 
 async function connect() {
@@ -48,7 +40,7 @@ async function connect() {
 
   const socket = makeWASocket({
     version,
-    logger: pino({ level: "warn" }), // Filtra los logs molestos
+    logger: pino({ level: "error" }),
     printQRInTerminal: true,
     defaultQueryTimeoutMs: 60 * 1000,
     auth: state,
@@ -58,10 +50,7 @@ async function connect() {
     markOnlineOnConnect: true,
     msgRetryCounterCache,
     shouldSyncHistoryMessage: () => false,
-    getMessage: async (key) => {
-      console.warn("Intento de reenvío de mensaje no disponible:", key);
-      return undefined; // evita bucles de cifrado
-    },
+    getMessage,
   });
 
   if (!socket.authState.creds.registered) {
@@ -125,9 +114,6 @@ async function connect() {
             warningLog("Desconexión inesperada.");
             break;
         }
-
-        // Borra los archivos .json cuando el bot se descontrole
-        deleteJsonFiles();
 
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttempts++;
