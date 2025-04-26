@@ -1,13 +1,9 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
-const fs = require("fs");
-const path = require("path");
 const puppeteer = require("puppeteer");
 const ffmpeg = require("fluent-ffmpeg");
 const stream = require("stream");
-const { promisify } = require("util");
-
-const pipeline = promisify(stream.pipeline);
+const { PassThrough } = require("stream");
 
 module.exports = {
   name: "progressbar",
@@ -18,12 +14,12 @@ module.exports = {
     console.log("Iniciando comando progressbar...");
     await sendWaitReact();
 
-    const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
-    const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
-
     try {
-      // Crear HTML
-      console.log("Creando archivo HTML...");
+      console.log("Iniciando Puppeteer...");
+      const browser = await puppeteer.launch({ headless: "new" });
+      const page = await browser.newPage();
+
+      // Cargar HTML directamente en memoria, no en disco
       const htmlContent = `
         <html>
           <head>
@@ -66,16 +62,10 @@ module.exports = {
           </body>
         </html>
       `;
-      fs.writeFileSync(htmlFilePath, htmlContent);
-
-      console.log("Iniciando Puppeteer...");
-      const browser = await puppeteer.launch({ headless: "new" });
-      const page = await browser.newPage();
-      await page.goto(`file://${htmlFilePath}`);
+      await page.setContent(htmlContent);
       await page.setViewport({ width: 800, height: 600 });
 
-      // Capturar frames en memoria
-      console.log("Capturando frames en memoria...");
+      console.log("Capturando frames...");
       const frames = [];
       for (let i = 0; i <= 50; i++) {
         await page.evaluate((progress) => {
@@ -86,53 +76,44 @@ module.exports = {
 
         const buffer = await page.screenshot({ type: 'png' });
         frames.push(buffer);
-        await new Promise((res) => setTimeout(res, 50)); // 50ms entre frames
+        await new Promise((res) => setTimeout(res, 30)); // 30ms entre frames
       }
 
       console.log("Cerrando navegador...");
       await browser.close();
 
-      // Crear stream desde frames
-      console.log("Creando stream para ffmpeg...");
-      const inputStream = new stream.PassThrough();
+      console.log("Convirtiendo frames a GIF en memoria...");
+      const frameStream = new PassThrough();
       (async () => {
         for (const frame of frames) {
-          inputStream.write(frame);
+          frameStream.write(frame);
         }
-        inputStream.end();
+        frameStream.end();
       })();
 
-      // Crear el GIF
-      console.log("Generando GIF...");
-      await new Promise((resolve, reject) => {
-        ffmpeg(inputStream)
+      const gifBuffer = await new Promise((resolve, reject) => {
+        const chunks = [];
+        ffmpeg(frameStream)
           .inputFormat('image2pipe')
           .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
-          .output(gifOutputPath)
-          .on('end', resolve)
+          .format('gif')
           .on('error', reject)
-          .run();
+          .on('end', () => resolve(Buffer.concat(chunks)))
+          .pipe()
+          .on('data', chunk => chunks.push(chunk));
       });
 
       console.log("Enviando GIF...");
       await sendSuccessReact();
       await socket.sendMessage(remoteJid, {
-        video: fs.readFileSync(gifOutputPath),
-        caption: "Aquí tienes tu barra de progreso animada.",
+        video: gifBuffer,
+        caption: "Aquí tienes tu barra de progreso animada (¡directamente en memoria!).",
         gifPlayback: true
       });
 
     } catch (error) {
       console.error("Error al generar el GIF de la barra de progreso:", error);
       await sendErrorReply("Hubo un error al crear el GIF de la barra de progreso.");
-    } finally {
-      console.log("Limpiando archivos temporales...");
-      try {
-        if (fs.existsSync(htmlFilePath)) fs.unlinkSync(htmlFilePath);
-        if (fs.existsSync(gifOutputPath)) fs.unlinkSync(gifOutputPath);
-      } catch (err) {
-        console.error("Error al limpiar archivos:", err);
-      }
     }
   },
 };
