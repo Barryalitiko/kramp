@@ -2,8 +2,11 @@ const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
 const puppeteer = require("puppeteer");
 const ffmpeg = require("fluent-ffmpeg");
-const stream = require("stream");
+const fs = require("fs");
+const path = require("path");
 const { PassThrough } = require("stream");
+
+const tempGifPath = path.resolve(process.cwd(), "temp_progressbar.gif");
 
 module.exports = {
   name: "progressbar",
@@ -91,25 +94,29 @@ module.exports = {
         frameStream.end();
       })();
 
-      const gifBuffer = await new Promise((resolve, reject) => {
-        const chunks = [];
+      // Convertir a GIF y guardarlo temporalmente
+      await new Promise((resolve, reject) => {
+        const gifStream = fs.createWriteStream(tempGifPath);
         ffmpeg(frameStream)
           .inputFormat('image2pipe')
           .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
           .format('gif')
-          .on('error', reject)
-          .on('end', () => resolve(Buffer.concat(chunks)))
-          .pipe()
-          .on('data', chunk => chunks.push(chunk));
+          .pipe(gifStream, { end: true });
+        
+        gifStream.on('finish', resolve);
+        gifStream.on('error', reject);
       });
 
       console.log("Enviando GIF...");
       await sendSuccessReact();
       await socket.sendMessage(remoteJid, {
-        video: gifBuffer,
-        caption: "Aquí tienes tu barra de progreso animada (¡directamente en memoria!).",
+        video: fs.readFileSync(tempGifPath),
+        caption: "Aquí tienes tu barra de progreso animada.",
         gifPlayback: true
       });
+
+      // Eliminar archivo temporal después de enviarlo
+      fs.unlinkSync(tempGifPath);
 
     } catch (error) {
       console.error("Error al generar el GIF de la barra de progreso:", error);
