@@ -161,6 +161,10 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
     await sendErrorReact();
     return await sendReply(`☠ Error! ${text}`);
   };
+  
+  const sendButtons = async (mensaje, botones) => {
+  return await sendReplyWithButton(mensaje, botones);
+};
 
   const sendAudioFromURL = async (url) => {
     try {
@@ -366,6 +370,7 @@ const sendLinkWithDelay = async (socket, remoteJid, webMessage, link, text) => {
     sendReplyWithLink,
     sendStickerFromURL,
     sendMessage,
+    sendButtons,
     sendVideoFromFile,
     sendReplyWithButton,
   };
