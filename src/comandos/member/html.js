@@ -14,105 +14,102 @@ module.exports = {
     console.log("Iniciando comando progressbar...");
     await sendWaitReact();
 
+    const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
+    const screenshotPath = path.join(__dirname, "temp_progressbar.png");
+    const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
+
     try {
-      // Crear un archivo HTML con la barra de progreso
+      // Crear HTML
       console.log("Creando archivo HTML...");
       const htmlContent = `
         <html>
           <head>
             <style>
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                background: #222;
+              }
               .progress-bar {
                 border: 2px solid red;
                 border-radius: 14px;
-                width: 100%;
+                width: 80%;
                 height: 40px;
-                position: relative;
                 background-color: #ccc;
+                position: relative;
               }
               .progress-bar > div {
                 color: white;
                 background: red;
-                overflow: hidden;
-                white-space: nowrap;
-                padding: 10px 20px;
+                height: 100%;
+                width: 0%;
                 border-radius: 10px;
-                animation: progress-bar 2s linear infinite;
+                animation: progress-bar 5s linear forwards;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: Arial, sans-serif;
+                font-size: 18px;
               }
               @keyframes progress-bar {
-                0% {
-                  width: 0;
-                }
-                100% {
-                  width: 100%;
-                }
+                0% { width: 0%; }
+                100% { width: 100%; }
               }
             </style>
           </head>
           <body>
             <div class="progress-bar">
-              <div>Progress...</div>
+              <div>Loading...</div>
             </div>
           </body>
         </html>
       `;
-
-      const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
-      console.log(`Guardando archivo HTML en ${htmlFilePath}...`);
       fs.writeFileSync(htmlFilePath, htmlContent);
 
-      // Usar Puppeteer para abrir el HTML en un navegador sin cabeza y capturar una captura de pantalla
+      // Lanzar navegador y abrir HTML
       console.log("Iniciando Puppeteer...");
       const browser = await puppeteer.launch();
-      console.log("Abriendo página...");
       const page = await browser.newPage();
-      console.log(`Navegando a ${htmlFilePath}...`);
-      await page.goto(`file:                    
+      await page.goto(`file://${htmlFilePath}`);
+      await page.setViewport({ width: 800, height: 600 });
 
-      const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
-      console.log(`//${htmlFilePath}`);
+      // Grabar capturas durante 5 segundos
+      console.log("Capturando imágenes...");
+      const frames = [];
+      for (let i = 0; i <= 50; i++) {
+        await page.evaluate((progress) => {
+          const div = document.querySelector('.progress-bar > div');
+          div.style.width = `${progress}%`;
+          div.innerText = `${Math.floor(progress)}%`;
+        }, i * 2);
 
-      const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
-      console.log(`Guardando GIF en ${gifOutputPath}...`);
+        const screenshotBuffer = await page.screenshot();
+        const framePath = path.join(__dirname, `frame_${i}.png`);
+        fs.writeFileSync(framePath, screenshotBuffer);
+        frames.push(framePath);
+        await new Promise((res) => setTimeout(res, 100)); // 100ms entre frames
+      }
 
-                                                                       
-      console.log("Iniciando conversión a GIF...");
+      // Cerrar navegador
+      console.log("Cerrando navegador...");
+      await browser.close();
+
+      // Generar el GIF
+      console.log("Creando GIF...");
       await new Promise((resolve, reject) => {
-        ffmpeg()
-          .input(page.screenshot({ fullPage: true, encoding: 'binary' }))
-          .inputFormat('image2')
+        const command = ffmpeg();
+        frames.forEach(frame => {
+          command.input(frame);
+        });
+        command
+          .on('end', resolve)
+          .on('error', reject)
+          .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
           .output(gifOutputPath)
-          .outputOptions('-pix_fmt', 'yuv420p', '-t 5', '-vf "fps=10"')
-          .on('end', () => {
-            console.log("Conversión a GIF completada.");
-            resolve();
-          })
-          .on('error', (err) => {
-            console.error("Error al convertir a GIF:", err);
-            reject(err);
-          })
-          .run();
-      });
-
-      console.log("Enviando GIF...");
-      await sendSuccessReact();
-      await sendVideoFromFile(remoteJid, {
-        video: fs.readFileSync(gifOutputPath),
-        caption: `// Convertir el HTML en un GIF (captura de pantalla cada segundo)
-      console.log("Iniciando conversión a GIF...");
-      await new Promise((resolve, reject) => {
-        ffmpeg()
-          .input(page.screenshot({ fullPage: true, encoding: 'binary' }))
-          .inputFormat('image2')
-          .output(gifOutputPath)
-          .outputOptions('-pix_fmt', 'yuv420p', '-t 5', '-vf "fps=10"')
-          .on('end', () => {
-            console.log("Conversión a GIF completada.");
-            resolve();
-          })
-          .on('error', (err) => {
-            console.error("Error al convertir a GIF:", err);
-            reject(err);
-          })
           .run();
       });
 
@@ -124,16 +121,22 @@ module.exports = {
         gifPlayback: true,
       });
 
-      // Limpiar archivos temporales
-      console.log("Limpiando archivos temporales...");
-      fs.unlinkSync(htmlFilePath);
-      fs.unlinkSync(gifOutputPath);
-
-      console.log("Cerrando navegador...");
-      await browser.close();
     } catch (error) {
       console.error("Error al generar el GIF de la barra de progreso:", error);
       await sendErrorReply("Hubo un error al crear el GIF de la barra de progreso.");
+    } finally {
+      // Limpiar archivos temporales
+      console.log("Limpiando archivos temporales...");
+      try {
+        if (fs.existsSync(htmlFilePath)) fs.unlinkSync(htmlFilePath);
+        if (fs.existsSync(gifOutputPath)) fs.unlinkSync(gifOutputPath);
+        const frameFiles = fs.readdirSync(__dirname).filter(file => file.startsWith('frame_') && file.endsWith('.png'));
+        for (const file of frameFiles) {
+          fs.unlinkSync(path.join(__dirname, file));
+        }
+      } catch (err) {
+        console.error("Error al limpiar archivos:", err);
+      }
     }
   },
 };
