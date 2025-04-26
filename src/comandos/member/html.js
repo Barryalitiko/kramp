@@ -51,7 +51,6 @@ module.exports = {
                 height: 100%;
                 width: 0%;
                 border-radius: 10px;
-                animation: none;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -70,12 +69,12 @@ module.exports = {
       fs.writeFileSync(htmlFilePath, htmlContent);
 
       console.log("Iniciando Puppeteer...");
-      const browser = await puppeteer.launch();
+      const browser = await puppeteer.launch({ headless: "new" }); // mejor opción para Puppeteer nuevo
       const page = await browser.newPage();
       await page.goto(`file://${htmlFilePath}`);
       await page.setViewport({ width: 800, height: 600 });
 
-      // Capturar frames en buffers
+      // Capturar frames en memoria
       console.log("Capturando frames en memoria...");
       const frames = [];
       for (let i = 0; i <= 50; i++) {
@@ -87,13 +86,13 @@ module.exports = {
 
         const buffer = await page.screenshot({ type: 'png' });
         frames.push(buffer);
-        await new Promise((res) => setTimeout(res, 100)); // 100ms entre frames
+        await new Promise((res) => setTimeout(res, 50)); // Más rápido: 50ms entre frames
       }
 
       console.log("Cerrando navegador...");
       await browser.close();
 
-      // Crear un stream desde los buffers
+      // Crear stream desde frames
       console.log("Creando stream para ffmpeg...");
       const inputStream = new stream.PassThrough();
       (async () => {
@@ -103,10 +102,10 @@ module.exports = {
         inputStream.end();
       })();
 
-      // Crear el GIF usando los buffers
+      // Crear el GIF
       console.log("Generando GIF...");
       await new Promise((resolve, reject) => {
-        const command = ffmpeg(inputStream)
+        ffmpeg(inputStream)
           .inputFormat('image2pipe')
           .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
           .output(gifOutputPath)
@@ -117,9 +116,8 @@ module.exports = {
 
       console.log("Enviando GIF...");
       await sendSuccessReact();
-      await sendVideoFromFile(remoteJid, {
-        video: fs.readFileSync(gifOutputPath),
-        caption: `Aquí tienes tu barra de progreso animada.`,
+      await sendVideoFromFile(remoteJid, gifOutputPath, {
+        caption: "Aquí tienes tu barra de progreso animada.",
         gifPlayback: true,
       });
 
@@ -127,7 +125,6 @@ module.exports = {
       console.error("Error al generar el GIF de la barra de progreso:", error);
       await sendErrorReply("Hubo un error al crear el GIF de la barra de progreso.");
     } finally {
-      // Limpiar archivos temporales
       console.log("Limpiando archivos temporales...");
       try {
         if (fs.existsSync(htmlFilePath)) fs.unlinkSync(htmlFilePath);
