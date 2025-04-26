@@ -1,8 +1,6 @@
-const { PREFIX } = require("../../krampus");
-const { WarningError } = require("../../errors/WarningError");
+const puppeteer = require("puppeteer-core");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
 const ffmpeg = require("fluent-ffmpeg");
 
 module.exports = {
@@ -56,10 +54,16 @@ module.exports = {
       const htmlFilePath = path.join(__dirname, "temp_progressbar.html");
       fs.writeFileSync(htmlFilePath, htmlContent);
 
-      // Usar Puppeteer para abrir el HTML en un navegador sin cabeza y capturar una captura de pantalla
-      const browser = await puppeteer.launch();
+      // Lanza Puppeteer con mayor tiempo de espera
+      const browser = await puppeteer.launch({
+        headless: true,
+        executablePath: "/path/to/your/chrome/or/chromium", // Reemplaza con la ruta de tu navegador si es necesario
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        timeout: 60000, // 1 minuto para iniciar el navegador
+      });
       const page = await browser.newPage();
       await page.goto(`file://${htmlFilePath}`);
+      
       const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
 
       // Convertir el HTML en un GIF (captura de pantalla cada segundo)
