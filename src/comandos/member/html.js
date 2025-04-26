@@ -1,28 +1,29 @@
-const { PREFIX } = require("../../krampus");
+const { PREFIX, TEMP_DIR } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
 const puppeteer = require("puppeteer");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
 const path = require("path");
 const { PassThrough } = require("stream");
-
-const tempGifPath = path.resolve(process.cwd(), "temp_progressbar.gif");
+const { exec } = require("child_process");
 
 module.exports = {
   name: "progressbar",
-  description: "Genera un GIF con una barra de progreso animada.",
+  description: "Genera un sticker animado con una barra de progreso.",
   commands: ["progressbar"],
   usage: `${PREFIX}progressbar`,
-  handle: async ({ socket, args, sendWaitReact, sendSuccessReact, sendErrorReply, remoteJid }) => {
+  handle: async ({ socket, args, sendWaitReact, sendSuccessReact, sendErrorReply, sendStickerFromFile, remoteJid }) => {
     console.log("Iniciando comando progressbar...");
     await sendWaitReact();
+
+    const tempGifPath = path.resolve(TEMP_DIR, "temp_progressbar.gif");
+    const outputWebpPath = path.resolve(TEMP_DIR, "output_progressbar.webp");
 
     try {
       console.log("Iniciando Puppeteer...");
       const browser = await puppeteer.launch({ headless: "new" });
       const page = await browser.newPage();
 
-      // Cargar HTML directamente en memoria, no en disco
       const htmlContent = `
         <html>
           <head>
@@ -65,6 +66,7 @@ module.exports = {
           </body>
         </html>
       `;
+
       await page.setContent(htmlContent);
       await page.setViewport({ width: 800, height: 600 });
 
@@ -85,7 +87,7 @@ module.exports = {
       console.log("Cerrando navegador...");
       await browser.close();
 
-      console.log("Convirtiendo frames a GIF en memoria...");
+      console.log("Convirtiendo frames a GIF...");
       const frameStream = new PassThrough();
       (async () => {
         for (const frame of frames) {
@@ -94,33 +96,46 @@ module.exports = {
         frameStream.end();
       })();
 
-      // Convertir a GIF y guardarlo temporalmente
+      // Crear un GIF temporal
       await new Promise((resolve, reject) => {
         const gifStream = fs.createWriteStream(tempGifPath);
         ffmpeg(frameStream)
           .inputFormat('image2pipe')
-          .outputOptions('-vf', 'fps=10,scale=800:-1:flags=lanczos')
+          .outputOptions('-vf', 'fps=10,scale=512:-1:flags=lanczos')
           .format('gif')
-          .pipe(gifStream, { end: true });
-        
-        gifStream.on('finish', resolve);
-        gifStream.on('error', reject);
+          .pipe(gifStream)
+          .on('finish', resolve)
+          .on('error', reject);
       });
 
-      console.log("Enviando GIF...");
+      console.log("Convirtiendo GIF a WebP animado...");
+      await new Promise((resolve, reject) => {
+        exec(
+          `ffmpeg -i ${tempGifPath} -y -vcodec libwebp -fs 0.99M -filter_complex "[0:v] scale=512:512:force_original_aspect_ratio=decrease,fps=12,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0.0,split[a][b];[a]palettegen=reserve_transparent=on[p];[b][p]paletteuse" ${outputWebpPath}`,
+          (error) => {
+            if (error) {
+              console.error(error);
+              return reject(error);
+            }
+            resolve();
+          }
+        );
+      });
+
+      console.log("Enviando sticker animado...");
       await sendSuccessReact();
-      await socket.sendMessage(remoteJid, {
-        video: fs.readFileSync(tempGifPath),
-        caption: "Aquí tienes tu barra de progreso animada.",
-        gifPlayback: true
-      });
+      await sendStickerFromFile(outputWebpPath);
 
-      // Eliminar archivo temporal después de enviarlo
       fs.unlinkSync(tempGifPath);
+      fs.unlinkSync(outputWebpPath);
 
     } catch (error) {
-      console.error("Error al generar el GIF de la barra de progreso:", error);
-      await sendErrorReply("Hubo un error al crear el GIF de la barra de progreso.");
+      console.error("Error en progressbar:", error);
+      await sendErrorReply("Hubo un error al crear el sticker de la barra de progreso.");
+      try {
+        if (fs.existsSync(tempGifPath)) fs.unlinkSync(tempGifPath);
+        if (fs.existsSync(outputWebpPath)) fs.unlinkSync(outputWebpPath);
+      } catch (e) {}
     }
   },
 };
