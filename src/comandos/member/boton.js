@@ -1,33 +1,52 @@
 const { PREFIX } = require("../../krampus");
+const { WarningError } = require("../../errors/WarningError");
 
 module.exports = {
   name: "botones",
-  description: "Envía un mensaje con botones interactivos",
+  description: "Envía un mensaje con botones.",
   commands: ["botones"],
   usage: `${PREFIX}botones`,
-  handle: async ({ sendReply, socket, remoteJid }) => {
+  handle: async ({ msg, sendReply, sendButtons }) => {
     try {
-      // Crear el mensaje con botones en el formato correcto
-      const buttons = [
-        { buttonId: "opcion1", buttonText: { displayText: "🔥 Opción 1" }, type: 1 },
-        { buttonId: "opcion2", buttonText: { displayText: "💡 Opción 2" }, type: 1 },
-        { buttonId: "opcion3", buttonText: { displayText: "⚡ Opción 3" }, type: 1 },
+      const botones = [
+        {
+          text: "Botón 1",
+          id: "boton1",
+        },
+        {
+          text: "Botón 2",
+          id: "boton2",
+        },
+        {
+          text: "Botón 3",
+          id: "boton3",
+        },
       ];
 
-      const buttonMessage = {
-        text: "Selecciona una opción:", // Mensaje principal
-        footer: "Krampus Bot", // Pie de mensaje
-        buttons: buttons,
-        headerType: 1, // Tipo de encabezado (1 = solo texto)
-      };
+      const mensaje = "Este es un mensaje con botones.";
+      await sendButtons(mensaje, botones);
 
-      // Enviar el mensaje con botones correctamente
-      await socket.sendMessage(remoteJid, buttonMessage, { quoted: null });
+      // Manejo de botones
+      if (msg.buttonsResponse) {
+        const botonId = msg.buttonsResponse.selectedButtonId;
+        console.log(`Botón presionado: ${botonId}`);
 
-      console.log("✅ Mensaje con botones enviado correctamente.");
+        switch (botonId) {
+          case "boton1":
+            await sendReply("Botón 1 presionado.");
+            break;
+          case "boton2":
+            await sendReply("Botón 2 presionado.");
+            break;
+          case "boton3":
+            await sendReply("Botón 3 presionado.");
+            break;
+          default:
+            await sendReply("Botón desconocido.");
+        }
+      }
     } catch (error) {
-      console.error("❌ Error al enviar el mensaje con botones:", error);
-      sendReply("⚠️ Ocurrió un error al enviar el mensaje con botones.");
+      console.error("Error al enviar mensaje con botones:", error);
     }
   },
 };
