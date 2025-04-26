@@ -66,7 +66,7 @@ module.exports = {
       console.log("Abriendo página...");
       const page = await browser.newPage();
       console.log(`Navegando a ${htmlFilePath}...`);
-      await page.goto(`file://${htmlFilePath}`);
+      await page.goto(`file:                    
 
       const gifOutputPath = path.join(__dirname, "temp_progressbar.gif");
       console.log(`//${htmlFilePath}`);
