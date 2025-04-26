@@ -1,19 +1,23 @@
 const { PREFIX } = require("../../krampus");
 const { WarningError } = require("../../errors/WarningError");
+const { createCanvas, registerFont } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
 
+// Registrar la fuente Spring Break
+const fontPath = path.resolve(__dirname, "../../../assets/fonts/Spring_Break.ttf");
+registerFont(fontPath, { family: "Spring Break" });
+
 module.exports = {
   name: "spring",
-  description: "Convierte un texto en una imagen con estilo primaveral",
+  description: "Convierte un texto en una animación con estilo primaveral",
   commands: ["spring"],
   usage: `${PREFIX}spring (texto)`,
 
   handle: async ({
     args,
-    sendImageFromFile,
-    sendReply,
+    sendVideoFromFile,
     sendWaitReact,
     sendSuccessReact,
     sendErrorReply,
@@ -26,58 +30,65 @@ module.exports = {
     await sendWaitReact();
 
     try {
-      const svgPath = path.join(__dirname, "temp_spring.svg");
-      const outputPath = path.join(__dirname, "temp_spring.png");
+      // Crear imagen con canvas
+      const canvas = createCanvas(1000, 300);
+      const ctx = canvas.getContext("2d");
 
-      const fontPath = path.resolve(__dirname, "../../../assets/fonts/Spring_Break.ttf");
-      const fontFamily = "Spring Break";
+      ctx.font = "80px 'Spring Break'";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-      const svgContent = `
-        <svg width="1000" height="300" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <style type="text/css">
-              @font-face {
-                font-family: '${fontFamily}';
-                src: url('file://${fontPath}');
-              }
-              .text {
-                font-family: '${fontFamily}';
-                font-size: 80px;
-                fill: url(#gradient);
-                stroke: black;
-                stroke-width: 8px;
-                paint-order: stroke fill;
-              }
-            </style>
-            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#ff6a00" />
-              <stop offset="50%" stop-color="#ff0084" />
-              <stop offset="100%" stop-color="#6a00ff" />
-            </linearGradient>
-          </defs>
-          <rect width="100%" height="100%" fill="transparent"/>
-          <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" class="text">${texto}</text>
-        </svg>
-      `;
+      const x = canvas.width / 2;
+      const y = canvas.height / 2;
 
-      fs.writeFileSync(svgPath, svgContent);
+      // Sombra
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 5;
+      ctx.shadowOffsetY = 5;
 
-      const command = `ffmpeg -y -i "${svgPath}" -vf "scale=1000:300" "${outputPath}"`;
+      // Borde negro
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "black";
+      ctx.strokeText(texto, x, y);
 
-      exec(command, async (err) => {
-        fs.unlinkSync(svgPath);
-        if (err) {
-          console.error("Error al ejecutar ffmpeg:", err);
-          return await sendErrorReply("Error al generar la imagen con ffmpeg.");
-        }
+      // Gradiente sunset
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+      gradient.addColorStop(0, "#ff6a00");
+      gradient.addColorStop(0.5, "#ff0084");
+      gradient.addColorStop(1, "#6a00ff");
+      ctx.fillStyle = gradient;
+      ctx.fillText(texto, x, y);
 
-        await sendSuccessReact();
-        await sendImageFromFile(outputPath, "¡Aquí tienes tu texto con estilo Spring!");
-        fs.unlinkSync(outputPath);
+      // Guardar como PNG temporal
+      const tempImage = path.join(__dirname, "temp_spring.png");
+      const out = fs.createWriteStream(tempImage);
+      const stream = canvas.createPNGStream();
+      stream.pipe(out);
+
+      out.on("finish", () => {
+        const overlayVideo = path.resolve(__dirname, "../../../assets/animations/spring_particles.mp4");
+        const outputVideo = path.join(__dirname, "spring_output.mp4");
+
+        // Comando ffmpeg para combinar la imagen con el overlay animado
+        const ffmpegCommand = `ffmpeg -y -loop 1 -i "${tempImage}" -i "${overlayVideo}" -filter_complex "[1:v]scale=1000:300[ov];[0:v][ov]overlay=format=auto" -t 5 -pix_fmt yuv420p -shortest "${outputVideo}"`;
+
+        exec(ffmpegCommand, async (error, stdout, stderr) => {
+          fs.unlinkSync(tempImage); // eliminar imagen temporal
+
+          if (error) {
+            console.error("Error con ffmpeg:", error);
+            return await sendErrorReply("Hubo un error al generar el video.");
+          }
+
+          await sendSuccessReact();
+          await sendVideoFromFile(outputVideo, "¡Aquí tienes tu texto animado con estilo Spring!");
+          fs.unlinkSync(outputVideo); // borrar video después de enviarlo
+        });
       });
     } catch (error) {
       console.error("Error general:", error);
-      await sendErrorReply("Ocurrió un error al crear la imagen.");
+      await sendErrorReply("Ocurrió un error al crear la animación.");
     }
   },
 };
