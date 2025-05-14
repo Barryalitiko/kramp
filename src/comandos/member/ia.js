@@ -2,10 +2,10 @@ const { PREFIX } = require("../../krampus");
 const axios = require("axios");
 
 module.exports = {
-  name: "pregunta",
-  description: "Haz una pregunta a la IA local",
-  commands: ["pregunta", "ia", "ask"],
-  usage: `${PREFIX}pregunta <texto>`,
+  name: "cosogi",
+  description: "Habla con una IA local usando Cosogi",
+  commands: ["cosogi", "ia2", "localia"],
+  usage: `${PREFIX}cosogi <mensaje>`,
   handle: async ({
     sendReply,
     args,
@@ -14,16 +14,16 @@ module.exports = {
   }) => {
     const question = args.join(" ");
     if (!question) {
-      return await sendReply("❌ Debes escribir una pregunta.");
+      return await sendReply("❌ Debes escribir algo para preguntarle a la IA.");
     }
 
-    await sendWaitReact("🤖");
+    await sendWaitReact("💬");
 
     try {
       const response = await axios.post("http://192.168.1.160:8000/v1/chat/completions", {
-        model: "open_llama_3b_v2_gguf",
+        model: "open_llama_3b_v2_gguf", // Aquí puedes poner cualquier modelo activo de Cosogi
         messages: [
-          { role: "system", content: "You are a helpful assistant." },
+          { role: "system", content: "Eres un asistente útil y conversador, responde de forma clara y precisa." },
           { role: "user", content: question }
         ]
       });
@@ -34,9 +34,9 @@ module.exports = {
         return await sendReply("❌ La IA no devolvió ninguna respuesta.");
       }
 
-      await sendReply(`🤖 ${reply}`);
+      await sendReply(`🤖 ${reply.trim()}`);
     } catch (err) {
-      console.error("Error al consultar la IA:", err.message);
+      console.error("Error al consultar Cosogi:", err.message);
       await sendReply("❌ Error al contactar con la IA local.");
     }
   }
