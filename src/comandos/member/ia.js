@@ -21,7 +21,7 @@ module.exports = {
 
     try {
       const response = await axios.post("http://192.168.1.160:8000/v1/chat/completions", {
-        model: "llama-3.2-3b-q4_0",
+        model: "llama_3_2_3b_q4_0",
         messages: [
           { role: "system", content: "Eres un asistente útil y conversador, responde de forma clara y precisa." },
           { role: "user", content: question }
