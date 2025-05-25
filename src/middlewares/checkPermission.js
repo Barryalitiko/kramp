@@ -1,38 +1,28 @@
 const { OWNER_NUMBER } = require("../krampus");
 
 exports.checkPermission = async ({ type, socket, userJid, remoteJid }) => {
-  if (type === "member") {
-    return true;
-  }
+  if (type === "member") return true;
 
   try {
-    const { participants, owner } = await socket.groupMetadata(remoteJid);
+    const metadata = await socket.groupMetadata(remoteJid);
+    const participant = metadata.participants.find(p => p.id === userJid);
 
-    const participant = participants.find(
-      (participant) => participant.id === userJid
-    );
+    if (!participant) return false;
 
-    if (!participant) {
-      return false;
-    }
-
-    const isOwner =
-      participant.id === owner || participant.admin === "superadmin";
-
+    const isGroupOwner = participant.id === metadata.owner || participant.admin === "superadmin";
     const isAdmin = participant.admin === "admin";
-
     const isBotOwner = userJid === `${OWNER_NUMBER}@s.whatsapp.net`;
 
-    if (type === "admin") {
-      return isOwner || isAdmin || isBotOwner;
+    switch (type) {
+      case "admin":
+        return isGroupOwner || isAdmin || isBotOwner;
+      case "owner":
+        return isGroupOwner || isBotOwner;
+      default:
+        return false;
     }
-
-    if (type === "owner") {
-      return isOwner || isBotOwner;
-    }
-
-    return false;
-  } catch (error) {
+  } catch (err) {
+    console.error(`checkPermission error: ${err.message}`);
     return false;
   }
 };
