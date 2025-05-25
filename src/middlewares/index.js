@@ -1,31 +1,29 @@
 const { PREFIX, OWNER_NUMBER } = require("../krampus");
 const { toUserJid } = require("../utils");
 
-exports.verifyPrefix = (prefix) => PREFIX === prefix;
-exports.hasTypeOrCommand = ({ type, command }) => type && command;
+exports.verifyPrefix = (prefix) => prefix === PREFIX;
+
+exports.hasTypeOrCommand = ({ type, command }) => Boolean(type && command);
 
 exports.isLink = (text) => {
-  const regex = /(https?:\/\/(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/\S*)?)/g;
-  return regex.test(text);
+  const urlRegex = /https?:\/\/(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/\S*)?/gi;
+  return urlRegex.test(text);
 };
 
 exports.isAdmin = async ({ remoteJid, userJid, socket }) => {
-  const { participants, owner } = await socket.groupMetadata(remoteJid);
+  try {
+    const { participants, owner } = await socket.groupMetadata(remoteJid);
 
-  const participant = participants.find(
-    (participant) => participant.id === userJid
-  );
+    const participant = participants.find(p => p.id === userJid);
+    if (!participant) return false;
 
-  if (!participant) {
+    const isGroupOwner = participant.id === owner || participant.admin === "superadmin";
+    const isBotOwner = participant.id === toUserJid(OWNER_NUMBER);
+    const isGroupAdmin = participant.admin === "admin";
+
+    return isGroupOwner || isGroupAdmin || isBotOwner;
+  } catch (error) {
+    console.error(`isAdmin error: ${error.message}`);
     return false;
   }
-
-  const isOwner =
-    participant.id === owner ||
-    participant.admin === "superadmin" ||
-    participant.id === toUserJid(OWNER_NUMBER);
-
-  const isAdmin = participant.admin === "admin";
-
-  return isOwner || isAdmin;
 };
